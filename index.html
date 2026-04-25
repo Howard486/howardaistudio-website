@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HowardAI_Studio | Microsoft 365 Security Intelligence</title>
+  <meta name="description" content="Turn Microsoft 365 Security into Action. 將分散的資安訊號整理成清楚、可行動的資訊，協助企業 IT 與資安團隊更有效率地處理日常風險。">
+  <meta property="og:title" content="HowardAI_Studio | M365 Security Intelligence">
+  <meta property="og:description" content="Turn Microsoft 365 Security into Action.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Solution Cards */
+    .solution-product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      transition: all .25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .solution-product-card.available:hover {
+      border-color: var(--border-accent);
+      box-shadow: 0 0 50px rgba(79,140,255,0.12);
+      transform: translateY(-4px);
+    }
+    .solution-product-card.wip {
+      opacity: .8;
+      border-style: dashed;
+    }
+    .solution-product-card.wip:hover {
+      opacity: 1;
+      border-color: rgba(122,92,255,0.4);
+      box-shadow: 0 0 40px rgba(122,92,255,0.08);
+    }
+    .solution-product-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .solution-product-card.available::before { background: var(--gradient); }
+    .solution-product-card.wip::before { background: linear-gradient(135deg,#7A5CFF,#A78BFA); }
+
+    .solution-status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 99px;
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 20px; width: fit-content;
+    }
+    .badge-available { background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.25); }
+    .badge-wip       { background: rgba(245,158,11,0.15); color: #FCD34D; border: 1px solid rgba(245,158,11,0.25); }
+
+    .solution-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; margin-bottom: 20px;
+    }
+    .solution-icon.blue   { background: rgba(79,140,255,0.12); border: 1px solid rgba(79,140,255,0.2); }
+    .solution-icon.purple { background: rgba(122,92,255,0.12); border: 1px solid rgba(122,92,255,0.2); }
+
+    .solution-features {
+      list-style: none; margin: 20px 0; flex: 1;
+    }
+    .solution-features li {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: .88rem; color: var(--text-secondary);
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .solution-features li:last-child { border-bottom: none; }
+    .solution-features li .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      margin-top: 7px; flex-shrink: 0;
+    }
+    .dot-blue   { background: var(--accent-blue); }
+    .dot-purple { background: var(--accent-purple); }
+
+    /* Demo Video Section */
+    .demo-video-card {
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-lg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 56px 32px;
+      gap: 16px;
+      transition: border-color .2s;
+    }
+    .demo-video-card:hover { border-color: var(--border-accent); }
+    .demo-play-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+    }
+    .demo-label { font-size: 1rem; font-weight: 700; margin-top: 4px; }
+    .demo-sub   { font-size: .84rem; color: var(--text-secondary); }
+
+    /* How it works – two-col layout */
+    .hiw-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+    }
+    .hiw-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+    }
+    .hiw-box-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: .95rem; font-weight: 700; margin-bottom: 28px;
+      padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .hiw-steps { display: flex; flex-direction: column; gap: 0; }
+    .hiw-step {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .hiw-step:last-child { border-bottom: none; }
+    .hiw-step-num {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; flex-shrink: 0; font-weight: 700;
+    }
+    .hiw-step-num.blue   { background: rgba(79,140,255,0.15); color: var(--accent-blue); }
+    .hiw-step-num.purple { background: rgba(122,92,255,0.15); color: #A78BFA; }
+    .hiw-step h4 { font-size: .9rem; font-weight: 600; margin-bottom: 3px; }
+    .hiw-step p  { font-size: .8rem; color: var(--text-secondary); line-height: 1.5; }
+
+    @media (max-width: 768px) {
+      .hiw-grid { grid-template-columns: 1fr; }
+      .solution-product-card { padding: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ======================== NAVIGATION ======================== -->
+<nav class="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <span>HowardAI</span>_Studio
+      </a>
+      <div class="nav-links">
+        <a href="#solutions">Solutions</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#use-cases">Use Cases</a>
+        <a href="pricing.html">Pricing</a>
+        <a href="#about">About</a>
+      </div>
+      <div class="nav-cta" style="display:flex;gap:8px;align-items:center;">
+        <a href="https://my.howardaistudio.com/sign-in" class="btn btn-outline" style="font-size:.82rem;padding:8px 20px;">登入</a>
+        <a href="https://my.howardaistudio.com/sign-up" class="btn btn-primary" style="font-size:.82rem;padding:8px 20px;">免費開始</a>
+      </div>
+      <button class="nav-hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="nav-mobile" id="nav-mobile">
+    <a href="#solutions">Solutions</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#use-cases">Use Cases</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="#about">About</a>
+    <a href="https://my.howardaistudio.com/sign-in" class="btn btn-outline">登入</a>
+    <a href="https://my.howardaistudio.com/sign-up" class="btn btn-primary">免費開始</a>
+  </div>
+</nav>
+
+<!-- ======================== HERO ======================== -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <!-- LEFT: Copy -->
+      <div class="hero-copy">
+        <div class="hero-tag">
+          <span class="badge">✦ Microsoft 365 Security</span>
+        </div>
+        <h1>
+          Turn Microsoft 365<br>
+          Security into <span class="gradient-text">Action</span>
+        </h1>
+        <p class="hero-sub">
+          Stop drowning in alerts. Start making decisions.<br>
+          We transform scattered M365 security signals into clear, actionable intelligence.
+        </p>
+        <p class="hero-sub-zh">
+          將分散的資安訊號整理成清楚、可理解、可行動的資訊，<br>
+          協助 IT 與資安人員更有效率地處理日常風險。
+        </p>
+        <div class="hero-actions">
+          <a href="#solutions" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            了解更多 &nbsp;Explore
+          </a>
+          <a href="mailto:sales@howardaistudio.com" class="btn btn-outline">
+            ✉️ 聯絡我們
+          </a>
+        </div>
+      </div>
+
+      <!-- RIGHT: Visual Mock -->
+      <div class="hero-visual">
+        <div class="mock-alert-window">
+          <div class="mock-title-bar">
+            <div class="mock-dot red"></div>
+            <div class="mock-dot yellow"></div>
+            <div class="mock-dot green"></div>
+            <span class="mock-alert-title">M365 Defender · Live Alerts</span>
+          </div>
+
+          <div class="alert-item">
+            <div class="alert-icon critical">🔴</div>
+            <div class="alert-text">
+              <strong>Impossible Travel Detected</strong>
+              <span>user@contoso.com · Defender for Identity · 2 min ago</span>
+            </div>
+            <span class="alert-badge critical">CRITICAL</span>
+          </div>
+
+          <div class="alert-item">
+            <div class="alert-icon warning">⚠️</div>
+            <div class="alert-text">
+              <strong>MFA Registration by New Device</strong>
+              <span>admin@contoso.com · Entra ID · 8 min ago</span>
+            </div>
+            <span class="alert-badge warning">HIGH</span>
+          </div>
+
+          <div class="alert-item">
+            <div class="alert-icon info">📧</div>
+            <div class="alert-text">
+              <strong>Suspicious Forwarding Rule</strong>
+              <span>finance@contoso.com · Exchange Online · 15 min ago</span>
+            </div>
+            <span class="alert-badge info">MEDIUM</span>
+          </div>
+
+          <div class="mock-flow-arrow">
+            <span style="color:#4F8CFF;">▼</span>
+            <span>Filtered &amp; Summarised by HowardAI_Studio</span>
+            <span style="color:#4F8CFF;">▼</span>
+          </div>
+
+          <div class="mock-line-notify">
+            <div class="line-icon">💬</div>
+            <div class="mock-line-text">
+              🔴 <strong>資安警示 — 立即處理</strong>
+              <small>Impossible Travel: user@contoso.com 已推送至 IT 團隊</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== PROBLEM ======================== -->
+<section class="section" id="problem">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">你是否遇到這些問題 · The Challenge</p>
+      <h2>資安工具不缺，缺的是<span class="gradient-text">快速理解與回應</span></h2>
+      <p>Most organizations don't lack security tools — they lack the ability to quickly understand and act on the signals those tools generate.</p>
+    </div>
+
+    <div class="grid-3">
+      <div class="problem-card">
+        <div class="icon">🌊</div>
+        <h3>警示太多，無法判斷優先順序</h3>
+        <p>Defender、Entra、Exchange — 每天數百條通知，無從分辨輕重，真正重要的事件反而被淹沒。</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">🗂️</div>
+        <h3>帳號與權限缺乏統一視角</h3>
+        <p>M365 License 誰在用？SharePoint 誰有存取？Teams 成員清不清楚？各自為政，沒有整合的清查工具。</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">⏰</div>
+        <h3>沒有即時通知，錯過關鍵事件</h3>
+        <p>等到次日 review 才發現問題，response time 過長，資安事件擴散的機會也更高。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== SOLUTIONS ======================== -->
+<section class="section section-alt" id="solutions">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">解決方案 · Our Solutions</p>
+      <h2>兩個專注的 M365 解決方案</h2>
+      <p>Purpose-built tools for Microsoft 365 — not generic platforms, but focused solutions that solve real enterprise problems.</p>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- Solution 1: MDE to LINE -->
+      <div class="solution-product-card available">
+        <div class="solution-status-badge badge-available">
+          <span>●</span> 立即可用 · Available
+        </div>
+        <div class="solution-icon blue">🔔</div>
+        <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px;">MDE to LINE</h2>
+        <p style="font-size:.88rem;color:var(--text-secondary);line-height:1.75;margin-bottom:8px;">
+          Microsoft Defender 警示自動推播
+        </p>
+        <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.8;">
+          將 Microsoft Defender for Endpoint 的安全警示自動篩選、整理，
+          透過 LINE 即時推送到 IT 人員手機，不需要持續盯著 Portal。
+        </p>
+        <ul class="solution-features" style="margin-top:24px;">
+          <li><span class="dot dot-blue"></span>Defender 警報接收、分級與篩選處理</li>
+          <li><span class="dot dot-blue"></span>LINE P1 Critical 即時推播，P2 High 亦可設定</li>
+          <li><span class="dot dot-blue"></span>Entra ID 登入日誌 + 風險偵測</li>
+          <li><span class="dot dot-blue"></span>Google Gemini AI 安全事件摘要分析（中英雙語）</li>
+          <li><span class="dot dot-blue"></span>Dashboard 儀表板 + 每週安全摘要報表</li>
+        </ul>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <a href="pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">
+            查看方案 · View Plans
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Solution 2: M365 帳號自理 (WIP) -->
+      <div class="solution-product-card wip">
+        <div class="solution-status-badge badge-wip">
+          <span>◐</span> 開發中 · Coming Soon
+        </div>
+        <div class="solution-icon purple">👤</div>
+        <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px;">M365 帳號自理</h2>
+        <p style="font-size:.88rem;color:var(--text-secondary);line-height:1.75;margin-bottom:8px;">
+          帳號、授權與權限一站式清查
+        </p>
+        <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.8;">
+          一站式掌握 Microsoft 365 的帳號狀態——License 使用情況、SharePoint 權限分配、Teams 成員清單，
+          讓 IT 管理員快速執行定期清查。
+        </p>
+        <ul class="solution-features" style="margin-top:24px;">
+          <li><span class="dot dot-purple"></span>M365 License 使用量查看與分析</li>
+          <li><span class="dot dot-purple"></span>SharePoint 網站權限清查</li>
+          <li><span class="dot dot-purple"></span>Teams 成員與外部來賓清查</li>
+          <li><span class="dot dot-purple"></span>可匯出的清查報告</li>
+          <li><span class="dot dot-purple"></span>定期排程掃描（敬請期待）</li>
+        </ul>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <a href="mailto:sales@howardaistudio.com?subject=帳號自理方案搶先體驗" class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--text-muted);">
+            搶先登記 · Join Waitlist
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== HOW IT WORKS ======================== -->
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">運作方式 · How It Works</p>
+      <h2>連接 M365，自動處理，即時回應</h2>
+      <p>From raw Microsoft 365 data to a clear notification in your team channel — without manual intervention.</p>
+    </div>
+
+    <div class="hiw-grid">
+
+      <!-- MDE to LINE flow -->
+      <div class="hiw-box">
+        <div class="hiw-box-title">
+          <span style="font-size:1.2rem;">🔔</span>
+          <span>MDE to LINE — 警示推播流程</span>
+          <span class="solution-status-badge badge-available" style="margin-bottom:0;margin-left:auto;font-size:.65rem;padding:3px 9px;">Available</span>
+        </div>
+        <div class="hiw-steps">
+          <div class="hiw-step">
+            <div class="hiw-step-num blue">1</div>
+            <div>
+              <h4>收集 Defender 警示</h4>
+              <p>從 Microsoft Defender for Endpoint 與 Entra ID 自動讀取安全事件</p>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num blue">2</div>
+            <div>
+              <h4>篩選與分級</h4>
+              <p>依嚴重程度分級排序，過濾低優先度雜訊，保留真正需要處理的警示</p>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num blue">3</div>
+            <div>
+              <h4>LINE 即時推播</h4>
+              <p>透過 LINE 推送清楚的摘要通知到指定群組或個人，附上建議處理步驟</p>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num blue">4</div>
+            <div>
+              <h4>IT 人員快速回應</h4>
+              <p>收到通知即可判斷優先順序，不需登入多個 Portal，縮短 response time</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 帳號自理 flow -->
+      <div class="hiw-box" style="opacity:.85;">
+        <div class="hiw-box-title">
+          <span style="font-size:1.2rem;">👤</span>
+          <span>M365 帳號自理 — 清查流程</span>
+          <span class="solution-status-badge badge-wip" style="margin-bottom:0;margin-left:auto;font-size:.65rem;padding:3px 9px;">開發中</span>
+        </div>
+        <div class="hiw-steps">
+          <div class="hiw-step">
+            <div class="hiw-step-num purple">1</div>
+            <div>
+              <h4>連接 M365 租戶</h4>
+              <p>透過 Microsoft Graph API 安全連接，最小權限原則，不需 Global Admin</p>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num purple">2</div>
+            <div>
+              <h4>掃描帳號與權限</h4>
+              <p>自動掃描 License 分配、SharePoint 網站權限、Teams 成員與來賓清單</p>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num purple">3</div>
+            <div>
+              <h4>產生清查報告</h4>
+              <p>整理成清楚的報告，標示異常項目（例如：未使用 License、外部來賓存取）</p>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num purple">4</div>
+            <div>
+              <h4>執行清理與調整</h4>
+              <p>根據報告進行授權回收、權限調整，維持 M365 環境的整潔與安全</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== USE CASES ======================== -->
+<section class="section section-alt" id="use-cases">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">適合對象 · Who It's For</p>
+      <h2>不同角色，不同的使用情境</h2>
+      <p>Whether you're managing daily IT operations or overseeing organization-wide security, our solutions meet you where you are.</p>
+    </div>
+
+    <div class="grid-3">
+
+      <div class="usecase-card">
+        <span class="role-tag role-it">IT Admin / IT 管理人員</span>
+        <h3>告別 Portal，用 LINE 管理 M365</h3>
+        <p>不需要持續登入 Defender Portal，重要事件直接推到手機，用人話說明狀況與建議處理方式。</p>
+        <ul>
+          <li>LINE 即時警示，隨時掌握</li>
+          <li>清楚的事件說明，不需深厚資安背景</li>
+          <li>每月 License 清查，避免浪費預算</li>
+        </ul>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="tag" style="font-size:.7rem;">MDE to LINE</span>
+          <span class="tag" style="font-size:.7rem;background:rgba(122,92,255,0.1);color:#C4B5FD;border-color:rgba(122,92,255,0.2);">帳號自理</span>
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <span class="role-tag role-ciso">Security Lead / 資安負責人</span>
+        <h3>快速掌握 M365 整體資安狀態</h3>
+        <p>不需要每天 drill down 進多個 portal，透過每日摘要快速掌握租戶風險，高風險事件即時通報。</p>
+        <ul>
+          <li>每日資安狀態摘要報告</li>
+          <li>高風險事件（Impossible Travel、MFA 異常）優先通報</li>
+          <li>Entra ID 身分風險即時可見</li>
+        </ul>
+        <div style="margin-top:16px;">
+          <span class="tag" style="font-size:.7rem;">MDE to LINE</span>
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <span class="role-tag role-soc">系統管理員 · SysAdmin</span>
+        <h3>定期清查，維持乾淨的 M365 環境</h3>
+        <p>員工離職忘記收回 License？外部來賓還留在 Teams？M365 帳號自理幫你系統化管理，不靠記憶。</p>
+        <ul>
+          <li>SharePoint 權限一覽，快速識別異常</li>
+          <li>Teams 外部成員清查</li>
+          <li>未使用 License 識別，節省授權成本</li>
+        </ul>
+        <div style="margin-top:16px;">
+          <span class="tag" style="font-size:.7rem;background:rgba(122,92,255,0.1);color:#C4B5FD;border-color:rgba(122,92,255,0.2);">帳號自理（開發中）</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== DEMO VIDEOS ======================== -->
+<section class="section" id="demo">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">產品展示 · Demo Videos</p>
+      <h2>看看產品如何運作</h2>
+      <p>Watch how our solutions work in real Microsoft 365 enterprise environments.</p>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- MDE to LINE Demo -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <span style="font-size:1.1rem;">🔔</span>
+          <span style="font-size:.95rem;font-weight:700;">MDE to LINE Demo</span>
+          <span class="solution-status-badge badge-available" style="margin-bottom:0;font-size:.65rem;padding:3px 9px;">Available</span>
+        </div>
+        <div class="demo-video-card">
+          <div class="demo-play-icon">▶</div>
+          <div class="badge badge-wip" style="font-size:.72rem;background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.2);color:#FCD34D;">
+            🚧 開發中 · Coming Soon
+          </div>
+          <p class="demo-label">Demo 影片即將推出</p>
+          <p class="demo-sub">從 Defender 警示到 LINE 推播的完整流程展示<br>
+            <span style="font-size:.78rem;color:var(--text-muted);">Future: YouTube Demo Link</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 帳號自理 Demo -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <span style="font-size:1.1rem;">👤</span>
+          <span style="font-size:.95rem;font-weight:700;">M365 帳號自理 Demo</span>
+          <span class="solution-status-badge badge-wip" style="margin-bottom:0;font-size:.65rem;padding:3px 9px;">開發中</span>
+        </div>
+        <div class="demo-video-card" style="opacity:.7;">
+          <div class="demo-play-icon" style="opacity:.5;">▶</div>
+          <div class="badge badge-wip" style="font-size:.72rem;background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.2);color:#FCD34D;">
+            🚧 開發中 · Coming Soon
+          </div>
+          <p class="demo-label">Demo 影片即將推出</p>
+          <p class="demo-sub">License、SharePoint、Teams 清查操作展示<br>
+            <span style="font-size:.78rem;color:var(--text-muted);">Future: YouTube Demo Link</span>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== PRICING TEASER ======================== -->
+<section class="section section-alt" id="pricing-preview">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">方案與定價 · Pricing</p>
+      <h2>從免費試用開始</h2>
+      <p>Trial、Pro、Enterprise — 從試用到完整方案，依你的需求選擇。</p>
+    </div>
+
+    <div class="grid-3" style="max-width:900px;margin:0 auto;">
+      <div class="card" style="text-align:center;padding:32px 24px;">
+        <div style="font-size:2rem;margin-bottom:10px;">⚡</div>
+        <h3 style="margin-bottom:6px;">Trial</h3>
+        <p style="font-size:.84rem;color:var(--text-secondary);margin-bottom:16px;">14 天免費試用，立即開始體驗</p>
+        <p style="font-size:1.6rem;font-weight:800;">$0<span style="font-size:.85rem;font-weight:400;color:var(--text-muted);"> / Free</span></p>
+      </div>
+      <div class="card" style="text-align:center;padding:32px 24px;border-color:var(--border-accent);box-shadow:var(--shadow-glow);">
+        <div style="font-size:2rem;margin-bottom:10px;">🛡️</div>
+        <h3 style="margin-bottom:6px;" class="gradient-text">Pro</h3>
+        <p style="font-size:.84rem;color:var(--text-secondary);margin-bottom:16px;">完整功能，適合有專職 IT 的團隊</p>
+        <p style="font-size:1rem;color:var(--text-muted);">方案詳情請至 App 查看</p>
+      </div>
+      <div class="card" style="text-align:center;padding:32px 24px;">
+        <div style="font-size:2rem;margin-bottom:10px;">🏢</div>
+        <h3 style="margin-bottom:6px;">Enterprise</h3>
+        <p style="font-size:.84rem;color:var(--text-secondary);margin-bottom:16px;">客製化需求</p>
+        <p style="font-size:1.2rem;font-weight:800;">洽詢 · Custom</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:36px;">
+      <a href="pricing.html" class="btn btn-primary">
+        查看完整方案比較 · View Full Pricing
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== ABOUT / TRUST ======================== -->
+<section class="section" id="about">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+      <div>
+        <p class="section-label">為什麼選擇我們 · Why HowardAI_Studio</p>
+        <h2 style="font-size:clamp(1.6rem,2.5vw,2.2rem);font-weight:800;letter-spacing:-.03em;margin-bottom:20px;">
+          專注、務實、<span class="gradient-text">可落地</span>
+        </h2>
+        <p style="font-size:.95rem;color:var(--text-secondary);line-height:1.8;margin-bottom:28px;">
+          由具備企業 Microsoft 365 導入實務經驗的獨立顧問所建立。不賣理論，只做能用的東西。
+        </p>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="trust-point"><span>✅</span><span>專注 Microsoft 365 生態系，深度而非廣度</span></div>
+          <div class="trust-point"><span>✅</span><span>實務經驗導向，理解企業 IT 的真實痛點</span></div>
+          <div class="trust-point"><span>✅</span><span>最小權限原則，安全整合不過度授權</span></div>
+          <div class="trust-point"><span>✅</span><span>一人工作室的靈活度，顧問等級的專業</span></div>
+        </div>
+      </div>
+      <div class="card" style="padding:36px;">
+        <div style="width:56px;height:56px;border-radius:14px;background:var(--gradient);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:20px;">🛡️</div>
+        <h3 style="font-size:1.15rem;margin-bottom:12px;">關於 HowardAI_Studio</h3>
+        <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.8;">
+          HowardAI_Studio 是一個專注於 <strong style="color:var(--text-primary)">Microsoft 365 安全整合</strong> 的一人工作室。
+          我們相信，大多數企業並不缺工具，缺的是能快速理解並回應的方式。
+        </p>
+        <p style="font-size:.9rem;color:var(--text-secondary);line-height:1.8;margin-top:12px;">
+          目前提供 <strong style="color:var(--text-primary)">MDE to LINE</strong> 警示推播方案，
+          以及正在開發中的 <strong style="color:#C4B5FD">M365 帳號自理</strong> 清查工具。
+        </p>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:.82rem;color:var(--text-muted);">
+          📧 sales@howardaistudio.com
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== CTA ======================== -->
+<section class="cta-section">
+  <div class="container">
+    <h2>讓 M365 資安資訊<span class="gradient-text">真正好用</span></h2>
+    <p>
+      如果你正在被大量警示困擾，或希望讓 M365 帳號管理更清楚、更系統化，<br>
+      歡迎先從簡單的對話開始。
+    </p>
+    <div class="cta-actions">
+      <a href="mailto:sales@howardaistudio.com" class="btn btn-primary" style="font-size:1rem;padding:14px 32px;">
+        ✉️ 聯絡我們 / Contact
+      </a>
+      <a href="pricing.html" class="btn btn-outline" style="font-size:1rem;padding:14px 32px;">
+        查看方案 · Pricing
+      </a>
+    </div>
+    <p style="margin-top:20px;font-size:.82rem;color:var(--text-muted);">
+      sales@howardaistudio.com · Response within 1 business day
+    </p>
+  </div>
+</section>
+
+<!-- ======================== FOOTER ======================== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="index.html" class="nav-logo" style="font-size:1rem;"><span>HowardAI</span>_Studio</a>
+        <p>Microsoft 365 Security Intelligence<br>將資安訊號轉化為可行動的資訊</p>
+        <p style="margin-top:12px;font-size:.8rem;color:var(--text-muted);">📧 sales@howardaistudio.com</p>
+      </div>
+      <div class="footer-col">
+        <h4>Solutions</h4>
+        <a href="#solutions">MDE to LINE</a>
+        <a href="#solutions">M365 帳號自理</a>
+        <a href="#demo">Demo Videos</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="#about">About</a>
+        <a href="pricing.html">Pricing</a>
+        <a href="mailto:sales@howardaistudio.com">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="refund.html">Refund Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 HowardAI_Studio. All rights reserved.</span>
+      <div class="footer-legal">
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="refund.html">Refunds</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const navMobile = document.getElementById('nav-mobile');
+  hamburger.addEventListener('click', () => navMobile.classList.toggle('open'));
+  navMobile.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navMobile.classList.remove('open')));
+</script>
+</body>
+</html>

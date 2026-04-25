@@ -1,0 +1,13 @@
+# Cloudflare Pages redirects
+# Redirect bare domain to www (optional — remove if using apex domain directly)
+# https://www.howardaistudio.com/* https://howardaistudio.com/:splat 301
+
+# App shortcuts
+/app       https://my.howardaistudio.com/sign-in  302
+/login     https://my.howardaistudio.com/sign-in  302
+/signup    https://my.howardaistudio.com/sign-up   302
+/dashboard https://my.howardaistudio.com           302
+
+# Product shortcuts
+/defendline  https://defendline.howardaistudio.com  302
+/365droid    https://365droid.howardaistudio.com    302

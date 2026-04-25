@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing · HowardAI_Studio</title>
+  <meta name="description" content="HowardAI_Studio 定價方案 — Trial、Pro、Enterprise，適合不同規模的 M365 資安需求。">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      display: flex; flex-direction: column;
+      transition: all .2s; position: relative;
+    }
+    .plan-card.featured {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 48px rgba(79,140,255,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .plan-card.featured::before {
+      content: 'Recommended';
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--gradient); color: #fff;
+      font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      padding: 4px 18px; border-radius: 99px;
+    }
+    .plan-name   { display:flex; align-items:center; gap:10px; font-size:1.1rem; font-weight:800; margin-bottom:6px; }
+    .plan-desc   { font-size:.84rem; color:var(--text-secondary); margin-bottom:20px; }
+    .plan-price-area { margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+    .plan-price-free {
+      font-size:3rem; font-weight:800; line-height:1; letter-spacing:-.04em;
+      background:var(--gradient-text); -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .plan-price-label { font-size:.82rem; color:var(--text-muted); margin-top:4px; }
+    .plan-price-app {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 16px; border-radius:8px;
+      background:rgba(79,140,255,0.08); border:1px solid rgba(79,140,255,0.15);
+      font-size:.84rem; color:var(--text-secondary);
+    }
+    .plan-price-custom { font-size:1.8rem; font-weight:800; letter-spacing:-.03em; }
+    .plan-features { list-style:none; flex:1; margin-bottom:28px; }
+    .plan-features li {
+      display:flex; gap:10px; align-items:flex-start;
+      font-size:.86rem; padding:7px 0; color:var(--text-secondary);
+      border-bottom:1px solid rgba(255,255,255,0.03);
+    }
+    .plan-features li:last-child { border-bottom:none; }
+    .plan-features .chk { color:var(--accent-blue); font-weight:700; flex-shrink:0; margin-top:1px; }
+    .plan-features .xmk { color:var(--text-muted); font-weight:700; flex-shrink:0; margin-top:1px; }
+    .plan-card .btn { margin-top:auto; width:100%; justify-content:center; }
+
+    /* Solution tabs */
+    .solution-tabs {
+      display:inline-flex; background:var(--bg-card); border:1px solid var(--border);
+      border-radius:12px; padding:5px; gap:4px; margin-bottom:16px;
+    }
+    .sol-tab {
+      padding:9px 22px; border-radius:8px; font-size:.88rem; font-weight:600;
+      cursor:pointer; border:none; background:none; color:var(--text-secondary);
+      transition:all .2s; display:flex; align-items:center; gap:8px;
+    }
+    .sol-tab.active { background:var(--gradient); color:#fff; }
+    .sol-tab .wip-dot { width:6px; height:6px; border-radius:50%; background:#FCD34D; flex-shrink:0; }
+
+    /* Comparison table */
+    .comp-table { width:100%; border-collapse:collapse; }
+    .comp-table th, .comp-table td { padding:11px 16px; border-bottom:1px solid var(--border); font-size:.85rem; }
+    .comp-table th {
+      font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+      color:var(--text-muted); background:var(--bg-card); text-align:center;
+    }
+    .comp-table th:first-child { text-align:left; }
+    .comp-table td:first-child { color:var(--text-primary); font-weight:500; }
+    .comp-table td:not(:first-child) { text-align:center; }
+    .comp-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .comp-table .chk  { color:var(--accent-blue); font-weight:800; }
+    .comp-table .xmk  { color:var(--text-muted); }
+    .comp-table .part { color:#FCD34D; }
+    .comp-table .cat td {
+      background:var(--bg-secondary); font-size:.73rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); padding:8px 16px;
+    }
+
+    .faq-item { border-bottom:1px solid var(--border); padding:20px 0; }
+    .faq-item:first-child { border-top:1px solid var(--border); }
+    .faq-q { font-size:.95rem; font-weight:600; margin-bottom:8px; }
+    .faq-a { font-size:.87rem; color:var(--text-secondary); line-height:1.8; }
+
+    .paddle-note {
+      background:var(--bg-card); border:1px solid var(--border-accent);
+      border-radius:var(--radius); padding:20px 24px; margin-top:36px;
+      display:flex; gap:14px; align-items:flex-start;
+      font-size:.85rem; color:var(--text-secondary); line-height:1.75;
+    }
+    .paddle-note strong { color:var(--text-primary); }
+
+    @media (max-width:768px) {
+      .solution-tabs { flex-direction:column; width:100%; }
+      .sol-tab { justify-content:center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo"><span>HowardAI</span>_Studio</a>
+      <div class="nav-links">
+        <a href="index.html#solutions">Solutions</a>
+        <a href="index.html#how-it-works">How It Works</a>
+        <a href="pricing.html" class="active">Pricing</a>
+        <a href="index.html#about">About</a>
+      </div>
+      <div class="nav-cta">
+        <a href="mailto:sales@howardaistudio.com" class="btn btn-primary" style="font-size:.82rem;padding:8px 20px;">✉️ Contact Us</a>
+      </div>
+      <button class="nav-hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="nav-mobile" id="nav-mobile">
+    <a href="index.html#solutions">Solutions</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="index.html#about">About</a>
+    <a href="mailto:sales@howardaistudio.com" class="btn btn-primary">✉️ Contact Us</a>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<section class="section" style="padding:72px 0 48px;text-align:center;">
+  <div class="container">
+    <p class="section-label">Pricing · 定價方案</p>
+    <h1 style="font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-.03em;margin-bottom:16px;">
+      從免費試用開始，按需升級
+    </h1>
+    <p style="font-size:1.05rem;color:var(--text-secondary);max-width:520px;margin:0 auto 10px;">
+      Trial、Pro、Enterprise — 依你的需求選擇合適方案。
+    </p>
+    <p style="font-size:.84rem;color:var(--text-muted);">
+      Pro 方案定價請至 Web App 查看 · Pricing details available in-app after sign-up.
+    </p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== PLAN CARDS ======================== -->
+<section class="section" id="plans">
+  <div class="container">
+
+    <!-- Solution selector -->
+    <div style="text-align:center;">
+      <div class="solution-tabs" id="sol-tabs">
+        <button class="sol-tab active" onclick="switchSol('mde',this)">🔔 MDE to LINE</button>
+        <button class="sol-tab" onclick="switchSol('acc',this)">
+          👤 M365 帳號自理 <span class="wip-dot" title="開發中"></span>
+        </button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:44px;">
+      <span id="sol-active-note" style="font-size:.82rem;color:var(--text-muted);">
+        MDE to LINE · 立即可用 · Available Now
+      </span>
+    </div>
+
+    <!-- Three plan cards -->
+    <div class="grid-3">
+
+      <!-- TRIAL -->
+      <div class="plan-card">
+        <div class="plan-name">
+          <span>⚡</span> Trial
+          <span style="font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(16,185,129,0.12);color:#34D399;border:1px solid rgba(16,185,129,0.2);">FREE</span>
+        </div>
+        <p class="plan-desc">14 天試用期，到期後需升級至 Pro 才能繼續使用。</p>
+        <div class="plan-price-area">
+          <div class="plan-price-free">$0</div>
+          <p class="plan-price-label">14 天 · 不需信用卡 · 到期後停止服務</p>
+        </div>
+        <ul class="plan-features" id="feat-trial"><!-- JS fills this --></ul>
+        <a href="https://defendline.howardaistudio.com" class="btn btn-outline" target="_blank" rel="noopener">
+          開始試用 · Start Free Trial
+        </a>
+      </div>
+
+      <!-- PRO (Featured) -->
+      <div class="plan-card featured">
+        <div class="plan-name">
+          <span>🛡️</span>
+          <span class="gradient-text">Pro</span>
+        </div>
+        <p class="plan-desc">完整功能，適合有專職 IT 人員的企業。</p>
+        <div class="plan-price-area">
+          <div class="plan-price-app">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            定價請至 Web App 查看
+          </div>
+          <p class="plan-price-label" style="margin-top:8px;">Sign up → view pricing in-app</p>
+        </div>
+        <ul class="plan-features" id="feat-pro"><!-- JS fills this --></ul>
+        <!-- TODO: Replace with Paddle / app sign-up link for Pro -->
+        <a href="mailto:sales@howardaistudio.com?subject=Pro%20Plan%20Inquiry" class="btn btn-primary">
+          了解 Pro 方案 · Learn More
+        </a>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="plan-card">
+        <div class="plan-name"><span>🏢</span> Enterprise</div>
+        <p class="plan-desc">客製需求，適合多租戶或大型組織。</p>
+        <div class="plan-price-area">
+          <div class="plan-price-custom">洽詢 · Custom</div>
+          <p class="plan-price-label">依需求報價 · Contact for pricing</p>
+        </div>
+        <ul class="plan-features" id="feat-ent"><!-- JS fills this --></ul>
+        <a href="mailto:sales@howardaistudio.com?subject=Enterprise%20Inquiry" class="btn btn-outline">
+          聯絡洽談 · Contact Us
+        </a>
+      </div>
+
+    </div>
+
+    <!-- WIP notice -->
+    <div id="wip-notice" style="display:none;text-align:center;margin-top:24px;">
+      <div style="display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-radius:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:.84rem;color:#FCD34D;">
+        🚧 &nbsp;M365 帳號自理方案開發中，方案結構供參考，正式上線前會更新。
+      </div>
+    </div>
+
+    <!-- Paddle note -->
+    <div class="paddle-note">
+      <span style="font-size:1.3rem;flex-shrink:0;">🔒</span>
+      <p>
+        <strong>安全付款 · Secure Checkout</strong><br>
+        所有付款由 <strong>Paddle</strong> 處理（Merchant of Record）。Trial 不需信用卡。Pro 升級於 Web App 內完成。<br>
+        <span style="font-size:.8rem;color:var(--text-muted);">
+          By purchasing, you agree to our
+          <a href="terms.html">Terms &amp; Conditions</a>,
+          <a href="privacy.html">Privacy Policy</a>, and
+          <a href="refund.html">Refund Policy</a>.
+        </span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ======================== FAQ ======================== -->
+<section class="section">
+  <div class="container-sm">
+    <div style="text-align:center;margin-bottom:40px;">
+      <p class="section-label">常見問題 · FAQ</p>
+      <h2 style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;">Frequently Asked Questions</h2>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Trial 結束後會自動扣款嗎？</div>
+      <div class="faq-a">Trial 不需信用卡即可使用。試用期結束後不會自動扣款，若要升級至 Pro 需至 Web App 內主動選擇方案並完成付款。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Pro 方案定價為何不顯示在網站？</div>
+      <div class="faq-a">我們有多個 Solution，定價依方案各有不同。為確保你看到最即時正確的資訊，Pro 方案定價統一在 Web App 內顯示，Sign up 後即可查看。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">如何開始？需要 Global Admin 嗎？</div>
+      <div class="faq-a">不需要 Global Admin。僅需在你的 Entra ID 建立一個具備 Security Reader 角色的 App Registration。系統設定頁面提供詳細步驟引導，填入 Tenant ID、Client ID、Client Secret 後即可連線。LINE 推播另需設定 Channel Token 與 Target User ID。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">可以隨時取消訂閱嗎？</div>
+      <div class="faq-a">是的，Pro 訂閱可隨時取消，不收違約金。取消後服務在當前計費週期結束時停止。詳細退款條件請參閱 <a href="refund.html">退款政策</a>。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">M365 帳號自理方案何時推出？</div>
+      <div class="faq-a">目前正在積極開發中。如有興趣搶先體驗，歡迎 <a href="mailto:sales@howardaistudio.com?subject=帳號自理搶先體驗">聯絡我們</a> 加入 waitlist。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">付款方式與發票</div>
+      <div class="faq-a">Pro 方案所有付款透過 Paddle 處理，支援 Visa、Mastercard、American Express 及 PayPal。如需台灣統編或年度合約請洽 Enterprise 方案。</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2>不確定哪個方案適合你？</h2>
+    <p>歡迎直接聯絡，先聊需求再決定方案。<br>Not sure which plan fits? Let's talk first.</p>
+    <div class="cta-actions">
+      <a href="mailto:sales@howardaistudio.com?subject=Pricing%20Inquiry" class="btn btn-primary" style="font-size:1rem;padding:14px 32px;">✉️ 聯絡我們</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="index.html" class="nav-logo" style="font-size:1rem;"><span>HowardAI</span>_Studio</a>
+        <p>Microsoft 365 Security Intelligence</p>
+        <p style="margin-top:12px;font-size:.8rem;color:var(--text-muted);">📧 sales@howardaistudio.com</p>
+      </div>
+      <div class="footer-col">
+        <h4>Solutions</h4>
+        <a href="index.html#solutions">MDE to LINE</a>
+        <a href="index.html#solutions">M365 帳號自理</a>
+        <a href="index.html#demo">Demo Videos</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="index.html#about">About</a>
+        <a href="pricing.html">Pricing</a>
+        <a href="mailto:sales@howardaistudio.com">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="refund.html">Refund Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 HowardAI_Studio. All rights reserved.</span>
+      <div class="footer-legal">
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="refund.html">Refunds</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Mobile nav
+  const hamburger = document.getElementById('hamburger');
+  const navMobile = document.getElementById('nav-mobile');
+  hamburger.addEventListener('click', () => navMobile.classList.toggle('open'));
+  navMobile.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navMobile.classList.remove('open')));
+
+  // ── Feature sets — must stay in sync with the comparison table above ──
+  const FEATS = {
+    mde: {
+      trial: [
+        ['chk','Defender 警報接收與處理'],
+        ['chk','Entra ID 登入日誌 + 風險偵測'],
+        ['chk','LINE P1 Critical 即時推播'],
+        ['chk','Dashboard 儀表板 + 每週安全摘要報表'],
+        ['chk','推播歷程追蹤'],
+        ['chk','中英文雙語介面'],
+        ['xmk','Google Gemini AI 安全摘要（Pro 以上）'],
+        ['xmk','事件保留 7 天（Pro：30 天）'],
+        ['xmk','14 天試用期限'],
+      ],
+      pro: [
+        ['chk','Defender 警報接收與處理'],
+        ['chk','Entra ID 登入日誌 + 風險偵測'],
+        ['chk','LINE P1 Critical 即時推播'],
+        ['chk','Google Gemini AI 安全摘要'],
+        ['chk','Dashboard 儀表板 + 每週安全摘要報表'],
+        ['chk','推播歷程追蹤'],
+        ['chk','中英文雙語介面'],
+        ['chk','事件保留 30 天'],
+      ],
+      ent: [
+        ['chk','所有 Pro 功能'],
+        ['chk','事件保留無限制'],
+        ['chk','年度合約'],
+      ],
+    },
+    acc: {
+      trial: [
+        ['chk','1 個 M365 租戶'],
+        ['chk','License 使用量查看'],
+        ['chk','SharePoint 基本清查'],
+        ['chk','Teams 成員清單'],
+        ['xmk','可匯出報告'],
+        ['xmk','Teams 外部來賓清查'],
+        ['xmk','異常項目標示'],
+        ['xmk','定期排程掃描'],
+      ],
+      pro: [
+        ['chk','1 個 M365 租戶'],
+        ['chk','License 完整分析'],
+        ['chk','SharePoint 完整清查'],
+        ['chk','Teams 成員 + 外部來賓清查'],
+        ['chk','可匯出報告（Excel / CSV）'],
+        ['chk','異常項目自動標示'],
+        ['chk','定期排程掃描'],
+        ['chk','Email 優先支援 (1 工作日)'],
+      ],
+      ent: [
+        ['chk','多租戶（洽詢）'],
+        ['chk','所有 Pro 功能'],
+        ['chk','SLA 保證'],
+        ['chk','專屬客戶支援'],
+        ['chk','年度合約 / 統編發票'],
+      ],
+    },
+  };
+
+  function renderList(id, items) {
+    document.getElementById(id).innerHTML = items
+      .map(([c, t]) => `<li><span class="${c}">${c === 'chk' ? '✓' : '–'}</span>${t}</li>`)
+      .join('');
+  }
+
+  function switchSol(sol, btn) {
+    document.querySelectorAll('.sol-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const f = FEATS[sol];
+    renderList('feat-trial', f.trial);
+    renderList('feat-pro',   f.pro);
+    renderList('feat-ent',   f.ent);
+    const isAcc = sol === 'acc';
+    document.getElementById('wip-notice').style.display = isAcc ? 'block' : 'none';
+    document.getElementById('sol-active-note').textContent = isAcc
+      ? 'M365 帳號自理 · 開發中 · Coming Soon'
+      : 'MDE to LINE · 立即可用 · Available Now';
+  }
+
+  // Init with MDE features
+  switchSol('mde', document.querySelector('.sol-tab'));
+</script>
+</body>
+</html>
