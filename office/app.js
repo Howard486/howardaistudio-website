@@ -370,8 +370,9 @@ const $=id=>document.getElementById(id);
 const make=(tag,attrs={},children=[])=>{const el=document.createElement(tag);for(const [key,value] of Object.entries(attrs)){if(key==='text')el.textContent=value;else if(key==='class')el.className=value;else if(key==='value')el.value=value;else if(key==='title')el.title=value;else el.setAttribute(key,value);}for(const child of children)el.append(child);return el;};
 const IS_LOCAL=['127.0.0.1:8765','localhost:8765'].includes(location.host);
 const AGENT_BASE=IS_LOCAL?'':'http://127.0.0.1:8765';
+const BROWSER_DEMO_ALLOWED=new URLSearchParams(location.search).get('browserDemo')==='1';
 const WS_BASE=IS_LOCAL?`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`:'ws://127.0.0.1:8765';
-const state={demo:true,clockedIn:false,ws:null,token:window.__HVA_OWNER_TOKEN__??null,connected:false,transport:null,agentStatus:{},running:false,abort:null,pauseNext:false,rounds:0,activity:[],liveDialogues:DEFAULT_BARKS,pairing:false,lastAgentError:''};
+const state={demo:true,clockedIn:false,ws:null,token:window.__HVA_OWNER_TOKEN__??null,connected:false,transport:null,agentStatus:{},running:false,abort:null,pauseNext:false,browserDemoActive:false,rounds:0,activity:[],liveDialogues:DEFAULT_BARKS,pairing:false,lastAgentError:''};
 
 OfficeScene.prototype.iso=function(x,y,z){return [460+(x-y)*18.3,82+(x+y)*9.15-(z||0)];};
 OfficeScene.prototype.click=function(e){
@@ -460,7 +461,7 @@ function refreshUI(){
     a.addEventListener('click',()=>showAgent(agent.id));return a;
   }));
   $('mode-preview').replaceChildren(make('span',{text:state.running?'◉ 主席正協調多模型會議':'現在沒有進行中的會議'}));
-  if(state.running){const b=make('button',{class:'outline-action',text:'⏸ 下一輪暫停／插話'});b.addEventListener('click',()=>{state.pauseNext=true;toast('已設定：下一輪切換時暫停');});$('mode-preview').append(b);}
+  if(state.running&&!state.browserDemoActive){const b=make('button',{class:'outline-action',text:'⏸ 下一輪暫停／插話'});b.addEventListener('click',()=>{state.pauseNext=true;toast('已設定：下一輪切換時暫停');});$('mode-preview').append(b);}
   else {const b=make('button',{class:'outline-action',text:'＋ 建立新會議 ↗'});b.addEventListener('click',showMeetingForm);$('mode-preview').append(b);}
 }
 function showAgent(id){if(state.running){toast('會議進行中，請先完成或停止');return;}const a=AGENT_MAP[id],root=modal(`${a.name} · ${a.role}`,'AGENT PROFILE');
@@ -595,11 +596,11 @@ function showMeetingForm(){
   const chips=make('div',{class:'agent-chips'});AGENTS.forEach(a=>{const label=make('label',{class:'agent-chip'});const check=make('input',{type:'checkbox',value:a.id});check.checked=true;check.addEventListener('change',()=>{const opts=[...chips.querySelectorAll('input:checked')].map(n=>n.value);if(!opts.includes(chair.value))chair.value=opts[0]||'';});label.append(check,make('span',{text:a.name}));chips.append(label);});group.append(chips);form.append(group);
   const chair=make('select',{id:'chair'});AGENTS.forEach(a=>chair.append(make('option',{value:a.id,text:`${a.name} — ${a.role}`})));chair.value='chatgpt';
   const rounds=make('select',{id:'discussion-rounds'},[1,2,3,4,5].map(value=>make('option',{value:String(value),text:value+' 輪'})));rounds.value='2';
-   const mode=make('select',{id:'exchange-mode'},[make('option',{value:'demo',text:'離線示範（完整自動流程；不呼叫 AI）'}),make('option',{value:'manual',text:'手動交接（真正將回覆貼回會議）'})]);mode.value=state.demo?'demo':'manual';
+   const mode=make('select',{id:'exchange-mode'},[make('option',{value:'demo',text:'離線示範（完整自動流程；不呼叫 AI）'}),make('option',{value:'manual',text:'手動交接（真正將回覆貼回會議）'})]);if(BROWSER_DEMO_ALLOWED)mode.append(make('option',{value:'browser_demo',text:'Browser Runner v0.6（僅本機模擬網頁，非真正 AI）'}));mode.value=state.demo?'demo':'manual';
   form.append(make('div',{class:'modal-grid'},[make('div',{class:'field'},[make('label',{for:'chair',text:'會議主席'}),chair]),make('div',{class:'field'},[make('label',{for:'exchange-mode',text:'內容來源'}),mode]),make('div',{class:'field'},[make('label',{for:'discussion-rounds',text:'討論輪數（預設 2 輪）'}),rounds])]));
   const warn=make('div',{class:'info-box',text:'示範流程不使用任何外部模型。手動交接流程會提供 Prompt 與站點連結，由你自行在各 AI 網頁產生回答後貼入，不會自動擷取第三方服務內容。'});form.append(warn);
   const actions=make('div',{class:'modal-actions'});const cancel=make('button',{class:'secondary-button',type:'button',text:'取消'});cancel.onclick=hideModal;const submit=make('button',{class:'primary-button',type:'submit',text:'◉ 開始會議'});actions.append(cancel,submit);form.append(actions);root.append(form);
-  form.addEventListener('submit',async e=>{e.preventDefault();const config={topic:topic.value.trim(),chair:chair.value,attendees:[...chips.querySelectorAll('input:checked')].map(x=>x.value),mode:modeChoice.value,exchange:mode.value,discussionRounds:Number(rounds.value)};try{validateConfig(config);}catch(err){toast(err.message);return;}if(!state.clockedIn){state.clockedIn=true;scene.setStatus(true);log('為開始會議，自動啟用本地秘書場景（不啟動第三方操作）');}await startMeeting(config);});
+  form.addEventListener('submit',async e=>{e.preventDefault();const config={topic:topic.value.trim(),chair:chair.value,attendees:[...chips.querySelectorAll('input:checked')].map(x=>x.value),mode:modeChoice.value,exchange:mode.value,discussionRounds:Number(rounds.value)};try{validateConfig(config);}catch(err){toast(err.message);return;}if(config.exchange==='browser_demo'){await startBrowserDemoMeeting(config);return;}if(!state.clockedIn){state.clockedIn=true;scene.setStatus(true);log('為開始會議，自動啟用本地秘書場景（不啟動第三方操作）');}await startMeeting(config);});
 }
 function contentBox(text){return make('pre',{class:'report-viewer',text});}
 function formatResult(root,session){
@@ -642,6 +643,76 @@ function parseWatercooler(text){
     try{const x=JSON.parse(match[1]);if(Array.isArray(x.watercooler_scripts))return x.watercooler_scripts.filter(s=>Array.isArray(s.participants)&&s.participants.length===2&&s.participants.every(id=>AGENT_MAP[id])&&Array.isArray(s.lines)&&s.lines.length<=8&&s.lines.every(l=>AGENT_MAP[l.speaker]&&typeof l.text==='string'&&l.text.length<=180)).slice(0,3);}catch{}
   }
   return [];
+}
+// Feature-gated demonstration only. The three roles below are synthetic mock roles.
+// All calls go through existing paired Windows Agent credentials.
+async function startBrowserDemoMeeting(config){
+  if(!BROWSER_DEMO_ALLOWED){toast('瀏覽器自動化測試未啟用');return;}
+  if(!state.connected||!state.token){toast('請先連線並配對 Windows Agent');return;}
+  if(state.running){toast('已有其他會議正在執行');return;}
+  state.running=true;state.browserDemoActive=true;state.abort=new AbortController();state.rounds=0;
+  scene.setMeeting(true,[]);refreshUI();
+  const root=modal('瀏覽器全自動測試','BROWSER RUNNER / MOCK ONLY');
+  const notice=make('div',{class:'warning-box',text:'此測試會操作自有模擬 AI 網頁；3 個虛擬角色、每輪 3 次回覆，並非 ChatGPT、Gemini 或其他 SaaS AI 的回答。'});
+  const progress=make('p',{class:'help-text',text:'等待 Agent 啟動本機測試 Chrome…'});
+  const detail=make('div',{class:'activity-list'});detail.style.maxHeight='250px';
+  root.append(notice,progress,detail);
+  const headers={Authorization:'Bearer '+state.token,'Content-Type':'application/json'};
+  let remoteId=null;
+  const controller=state.abort;
+  const cancelRemote=()=>{
+    if(remoteId)void fetch(AGENT_BASE+'/api/demo/meeting/'+encodeURIComponent(remoteId)+'/cancel',{
+      method:'POST',headers,body:'{}',signal:AbortSignal.timeout(8000)
+    }).catch(()=>{});
+  };
+  controller.signal.addEventListener('abort',cancelRemote,{once:true});
+  try{
+    const response=await fetch(AGENT_BASE+'/api/demo/meeting',{method:'POST',headers,
+      body:JSON.stringify({topic:config.topic,rounds:config.discussionRounds}),
+      signal:AbortSignal.timeout(26000)});
+    const initial=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(initial.detail||'Agent 無法建立 Browser Runner 任務（HTTP '+response.status+'）');
+    remoteId=initial.id;
+    if(controller.signal.aborted){cancelRemote();throw new DOMException('Cancelled','AbortError');}
+    log('瀏覽器測試開始：'+config.discussionRounds+' 輪，每輪 3 個模擬角色');
+    let latest=null;
+    const deadline=Date.now()+180000;
+    while(Date.now()<deadline){
+      if(controller.signal.aborted)throw new DOMException('Cancelled','AbortError');
+      const update=await fetch(AGENT_BASE+'/api/demo/meeting/'+encodeURIComponent(remoteId),{
+        headers:{Authorization:'Bearer '+state.token},signal:AbortSignal.timeout(10000),cache:'no-store'});
+      const data=await update.json().catch(()=>({}));
+      if(!update.ok)throw Error(data.detail||'無法取得 Browser Runner 進度（HTTP '+update.status+'）');
+      latest=data;
+      state.rounds=data.results?.length||0;
+      progress.textContent='狀態：'+data.status+' · 完成 '+state.rounds+'/'+(config.discussionRounds*3)+' 次模擬任務';
+      detail.replaceChildren(...(data.events||[]).slice(-15).reverse().map(event=>
+        make('p',{},[make('time',{text:event.type}),make('span',{text:[event.role,event.round?'R'+event.round:''].filter(Boolean).join(' · ')})])));
+      if(['COMPLETED','FAILED','CANCELLED'].includes(data.status))break;
+      await duration(850);
+    }
+    if(!latest||latest.status!=='COMPLETED')throw Error(latest?.error||('測試未完成：'+(latest?.status||'逾時')));
+    const session={
+      id:'demo_'+remoteId,topic:config.topic,created_at:new Date().toISOString(),
+      chair:'mock-role',attendees:['mock-strategy','mock-technology','mock-risk'],
+      mode:config.mode,discussion_rounds:config.discussionRounds,
+      rounds_log:latest.results.map(x=>({agent_id:'mock-'+x.role,phase:'MOCK_R'+x.round,
+        discussion_round:x.round,output:x.response,prompt:'[自動化測試資料]',completed_at:new Date().toISOString()})),
+      final_markdown:latest.report,watercooler_scripts:[]
+    };
+    await saveMeeting(session).catch(e=>toast('本機 IndexedDB 儲存失敗：'+e.message));
+    log('Browser Runner 已完成 '+session.rounds_log.length+' 次模擬回覆；已產出標記為 MOCK 的報告');
+    formatResult(root,session);
+  }catch(error){
+    if(controller.signal.aborted)cancelRemote();
+    root.replaceChildren(make('div',{class:'warning-box',text:
+      controller.signal.aborted?'已要求停止 Browser Runner；本次模擬會議沒有完成。':'Browser Runner 測試失敗：'+error.message}));
+    log('Browser Runner：'+error.message);
+  }finally{
+    controller.signal.removeEventListener('abort',cancelRemote);
+    state.running=false;state.browserDemoActive=false;state.abort=null;
+    scene.setMeeting(false);refreshUI();
+  }
 }
 async function startMeeting(config){
   state.running=true;state.abort=new AbortController();state.rounds=0;state.pauseNext=false;
@@ -694,15 +765,22 @@ for(const id of ['rail-history','quick-history'])$(id).addEventListener('click',
 $('rail-help').addEventListener('click',help);
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString('zh-TW',{hour12:false}),1000);
 $('clock').textContent=new Date().toLocaleTimeString('zh-TW',{hour12:false});
-log('系統啟動：像素辦公室場景已載入');refreshUI();if(IS_LOCAL)connectAgent();
+log('系統啟動：像素辦公室場景已載入');
+if(BROWSER_DEMO_ALLOWED){
+ const submit=document.querySelector('#quick-meeting button[type=submit]');
+ if(submit)submit.textContent='▶ 開始 Browser Runner 模擬會議';
+ const note=make('div',{class:'warning-box',text:'開發測試模式：Browser Runner 只操作自有模擬 AI 網頁，不會操作 ChatGPT 或 Gemini。需配對新版 Agent 並明確啟用測試開關。'});
+ $('quick-meeting').append(note);
+}
+refreshUI();if(IS_LOCAL)connectAgent();
 
 
 
 document.getElementById('quick-meeting').addEventListener('submit',async e=>{
  e.preventDefault();if(state.running){toast('會議進行中');return;}
  const f=e.currentTarget;
- const cfg={topic:f.querySelector('#quick-topic').value.trim(),chair:f.querySelector('#quick-chair').value,attendees:[...f.querySelectorAll('#quick-attendees input:checked')].map(x=>x.value),mode:f.querySelector('#quick-mode').value,exchange:state.demo?'demo':'manual',discussionRounds:Number(f.querySelector('#quick-rounds').value)};
+ const cfg={topic:f.querySelector('#quick-topic').value.trim(),chair:f.querySelector('#quick-chair').value,attendees:[...f.querySelectorAll('#quick-attendees input:checked')].map(x=>x.value),mode:f.querySelector('#quick-mode').value,exchange:BROWSER_DEMO_ALLOWED?'browser_demo':(state.demo?'demo':'manual'),discussionRounds:Number(f.querySelector('#quick-rounds').value)};
  try{validateConfig(cfg)}catch(err){toast(err.message);return;}
  if(!state.clockedIn){state.clockedIn=true;scene.setStatus(true);log('啟動本地秘書場景');}
- await startMeeting(cfg);
+ if(cfg.exchange==='browser_demo')await startBrowserDemoMeeting(cfg);else await startMeeting(cfg);
 });
