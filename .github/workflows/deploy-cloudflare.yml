@@ -1,4 +1,4 @@
-name: Deploy Howard AI Studio to Cloudflare
+name: Deploy Howard AI Studio public preview
 on:
   push:
     branches: [main]
@@ -19,18 +19,8 @@ jobs:
           node-version: '22'
       - name: Syntax check Office
         run: node --check office/app.js
-      - name: Verify private Access protection before deployment
-        shell: bash
-        run: |
-          set -euo pipefail
-          for url in https://howardaistudio.com/ https://howardaistudio.com/office/; do
-            headers=$(curl -sS --max-time 20 -D - -o /dev/null "$url")
-            if ! printf '%s\n' "$headers" | grep -Eiq '^location:.*(cdn-cgi/access|cloudflareaccess\.com)'; then
-              echo "ERROR: Cloudflare Access authentication was not confirmed for $url. Aborting private workspace deployment."
-              exit 1
-            fi
-            echo "Access gate verified for $url"
-          done
+      - name: Public preview warning
+        run: echo "Publishing STATIC demo only. No Cloudflare Access or custom domain required. Public content is visible to anyone with the preview URL."
       - name: Prepare static asset directory
         shell: bash
         run: |
@@ -41,6 +31,7 @@ jobs:
           cat > wrangler.production.jsonc <<'JSON'
           {
             "name": "howardaistudio-website",
+            "workers_dev": true,
             "compatibility_date": "2026-04-26",
             "assets": {"directory": ".cloudflare-dist"}
           }
