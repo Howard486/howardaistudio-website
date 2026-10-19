@@ -1,0 +1,28 @@
+name: Validate Office v0.6 Browser Demo Bridge
+on:
+  push:
+    branches:
+      - feat/office-v06-browser-demo-bridge
+    paths:
+      - office/**
+      - .github/workflows/validate-office-v06.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  office-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax
+        run: node --check office/app.js
+      - name: Test existing Office functionality and v0.6 demo gate
+        run: |
+          node --test office/meeting-controls.test.mjs
+          node --test office/agent-connection.test.mjs
+          node --test office/discussion-rounds.test.mjs
+          node --test office/headers.test.mjs
+          node --test office/browser-demo.test.mjs
