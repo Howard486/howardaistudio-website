@@ -1,0 +1,54 @@
+name: Deploy Howard AI Studio to Cloudflare
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: howardaistudio-production
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check Office
+        run: node --check office/app.js
+      - name: Verify private Access protection before deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in https://howardaistudio.com/ https://howardaistudio.com/office/; do
+            headers=$(curl -sS --max-time 20 -D - -o /dev/null "$url")
+            if ! printf '%s\n' "$headers" | grep -Eiq '^location:.*(cdn-cgi/access|cloudflareaccess\.com)'; then
+              echo "ERROR: Cloudflare Access authentication was not confirmed for $url. Aborting private workspace deployment."
+              exit 1
+            fi
+            echo "Access gate verified for $url"
+          done
+      - name: Prepare static asset directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cloudflare-dist
+          cp ./*.html ./style.css ./_headers ./_redirects ./robots.txt .cloudflare-dist/
+          cp -R office .cloudflare-dist/office
+          cat > wrangler.production.jsonc <<'JSON'
+          {
+            "name": "howardaistudio-website",
+            "compatibility_date": "2026-04-26",
+            "assets": {"directory": ".cloudflare-dist"}
+          }
+          JSON
+      - name: Deploy with Wrangler
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.143.0'
+          command: deploy --config wrangler.production.jsonc
