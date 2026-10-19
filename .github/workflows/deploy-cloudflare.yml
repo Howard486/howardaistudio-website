@@ -1,4 +1,4 @@
-name: Deploy Howard AI Studio temporary preview
+name: Deploy Howard AI Studio Cloudflare Workers
 on:
   push:
     branches: [main]
@@ -19,8 +19,8 @@ jobs:
           node-version: '22'
       - name: Syntax check Office
         run: node --check office/app.js
-      - name: Public preview warning
-        run: echo "Publishing STATIC demo only. No Cloudflare Access or custom domain required. Public content is visible to anyone with the preview URL."
+      - name: Publish scope
+        run: echo "Deploying to the configured Cloudflare account. Workers.dev will be public unless Cloudflare Access protects it."
       - name: Prepare static asset directory
         shell: bash
         run: |
@@ -42,4 +42,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: '4.143.0'
-          command: deploy --temporary --config wrangler.production.jsonc
+          command: deploy --config wrangler.production.jsonc
