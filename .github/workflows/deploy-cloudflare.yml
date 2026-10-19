@@ -23,6 +23,7 @@ jobs:
           node --test office/meeting-controls.test.mjs
           node --test office/agent-connection.test.mjs
           node --test office/headers.test.mjs
+          node --test office/discussion-rounds.test.mjs
       - name: Publish scope
         run: echo "Deploying to the configured Cloudflare account. Workers.dev will be public unless Cloudflare Access protects it."
       - name: Prepare static asset directory
