@@ -350,7 +350,7 @@ const make=(tag,attrs={},children=[])=>{const el=document.createElement(tag);for
 const IS_LOCAL=['127.0.0.1:8765','localhost:8765'].includes(location.host);
 const AGENT_BASE=IS_LOCAL?'':'http://127.0.0.1:8765';
 const WS_BASE=IS_LOCAL?`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`:'ws://127.0.0.1:8765';
-const state={demo:true,clockedIn:false,ws:null,token:window.__HVA_OWNER_TOKEN__??null,connected:false,agentStatus:{},running:false,abort:null,pauseNext:false,rounds:0,activity:[],liveDialogues:DEFAULT_BARKS};
+const state={demo:true,clockedIn:false,ws:null,token:window.__HVA_OWNER_TOKEN__??null,connected:false,agentStatus:{},running:false,abort:null,pauseNext:false,rounds:0,activity:[],liveDialogues:DEFAULT_BARKS,pairing:false,lastAgentError:''};
 
 OfficeScene.prototype.iso=function(x,y,z){return [460+(x-y)*18.3,82+(x+y)*9.15-(z||0)];};
 OfficeScene.prototype.click=function(e){
@@ -406,7 +406,8 @@ OfficeScene.prototype.draw=function(t){
 };
 const scene=new OfficeScene($('office-scene'),{onMeetingClick:()=>showMeetingForm(),onAgentClick:id=>showAgent(id),onBubble:(id,text)=>{if(text)log(`${AGENT_MAP[id].name}：${text.slice(0,70)}`);}});
 function log(message){state.activity.unshift({time:new Date().toLocaleTimeString('zh-TW',{hour12:false}),text:message});state.activity=state.activity.slice(0,30);const root=$('activity-list');root.replaceChildren(...state.activity.slice(0,8).map(item=>make('p',{},[make('time',{text:item.time}),make('span',{text:item.text})])));}
-function toast(text){const node=make('div',{class:'toast',text});$('toast-region').append(node);setTimeout(()=>node.remove(),4300);}
+let lastToast={text:'',at:0};
+ function toast(text){const now=Date.now();if(lastToast.text===text&&now-lastToast.at<3000)return;lastToast={text,at:now};const node=make('div',{class:'toast',text});$('toast-region').append(node);setTimeout(()=>node.remove(),4300);}
 function modal(title,kicker='OFFICE CONTROL'){const backdrop=$('modal-backdrop');$('modal-title').textContent=title;$('modal-kicker').textContent=kicker;$('modal-content').replaceChildren();backdrop.classList.remove('hidden');$('modal-close').focus();return $('modal-content');}
 function requestStopMeeting(){
   if(!state.running || !state.abort || state.abort.signal.aborted)return false;
@@ -428,7 +429,7 @@ function refreshUI(){
   $('office-state').textContent=state.running?'● 會議進行中':state.clockedIn?'● 已打卡上班':'● 待機中';
   $('room-population').textContent=`${state.clockedIn?'05':'00'} / 05 ONLINE`;
   $('scene-context').textContent=state.running?'OFFICE STATUS: IN MEETING':state.clockedIn?'OFFICE STATUS: ONLINE':'OFFICE STATUS: IDLE';
-  $('connection-label').textContent=state.connected?'● 本機 Agent 已連線':(!IS_LOCAL&&!state.token?'○ 點 ↻ 配對 Agent':'○ 本機 Agent 未連線');
+  $('connection-label').textContent=state.connected?'● 本機 Agent 已連線':state.pairing?'◌ Agent 配對中':state.lastAgentError?'⚠ Agent 連線失敗':(!IS_LOCAL&&!state.token?'○ 請先配對 Agent':'○ 本機 Agent 未連線');$('connection-label').title=state.lastAgentError||'需要在本機 Agent 控制台核准配對';
   const list=$('agent-list');list.replaceChildren(...AGENTS.map(agent=>{
     const status=state.demo?(state.clockedIn?'DEMO READY':'OFFLINE'):(state.agentStatus[agent.id]?.status||'NOT_OPEN');
     const ready=status==='TAB_OPEN'||status==='DEMO READY';
@@ -447,10 +448,11 @@ function showAgent(id){if(state.running){toast('會議進行中，請先完成�
 }
 async function connectAgent(){
   try{
-    const res=await fetch(`${AGENT_BASE}/api/health`,{cache:'no-store',signal:AbortSignal.timeout(1800)});if(!res.ok)throw Error('Agent unavailable');
-    if(!state.token){log('網頁尚未完成 Agent 授權配對');return;}
+    const res=await fetch(`${AGENT_BASE}/api/health`,{cache:'no-store',signal:AbortSignal.timeout(3500)});if(!res.ok)throw Error('Agent 健康檢查失敗（HTTP '+res.status+'）');
+    if(!state.token){log('本機 Agent 已啟動，但尚未授權此網頁');return false;}
     state.ws?.close();const ws=new WebSocket(`${WS_BASE}/ws`);
     state.ws=ws;
+    const waitAuth=new Promise(resolve=>{let settled=false;const done=ok=>{if(settled)return;settled=true;clearTimeout(timeout);resolve(ok);};const timeout=setTimeout(()=>{ws.close();done(false);},7500);ws.addEventListener('message',e=>{try{if(JSON.parse(e.data).event==='AUTH_OK')done(true);}catch{}});ws.addEventListener('close',()=>done(false));ws.addEventListener('error',()=>done(false));});
     ws.onopen=()=>ws.send(JSON.stringify({action:'AUTH',token:state.token}));
     ws.onmessage=e=>{let data;try{data=JSON.parse(e.data);}catch{return;}
       if(data.event==='AUTH_OK'){state.connected=true;log('本地 Agent 已連接');refreshUI();ws.send(JSON.stringify({action:'REFRESH_STATUS'}));}
@@ -459,13 +461,14 @@ async function connectAgent(){
       if(data.event==='ERROR'){state.pendingClockIn=false;toast('Agent：'+data.message);}
     };
     ws.onclose=()=>{if(state.ws===ws){state.connected=false;refreshUI();}};
-    ws.onerror=()=>{state.connected=false;refreshUI();};
-  }catch{state.connected=false;refreshUI();}
+    ws.onerror=()=>{state.connected=false;state.lastAgentError='無法建立 Agent WebSocket。請允許 Chrome 的本機網路存取權限';refreshUI();};
+    const authorized=await waitAuth;if(!authorized){state.connected=false;state.lastAgentError='Agent WebSocket 尚未完成驗證，請重新配對';refreshUI();}else state.lastAgentError='';return authorized;
+  }catch(error){state.connected=false;state.lastAgentError='無法連線本機 Agent。請確認 Office 與 EXE 在同一台 Windows 電腦，並允許 Chrome 此網站的「本機網路存取」權限。('+String(error?.message||error)+')';log(state.lastAgentError);refreshUI();return false;}
 }
 function clock(){
   if(state.running){toast('請先結束會議，再下班打卡');return;}
   if(!state.clockedIn){
-    if(!state.demo&&!state.connected){toast('請先啟動本機 Agent 或改回示範模式');return;}
+    if(!state.demo&&!state.connected){requestPairing();return;}
     if(state.demo){state.clockedIn=true;scene.setStatus(true);log('已開啟離線示範：五位秘書上班');}
     else{state.pendingClockIn=true;state.ws.send(JSON.stringify({action:'CLOCK_IN_ALL'}));log('已向 Agent 送出 Chrome 打卡指令，等待結果');}
   }else{
@@ -474,16 +477,19 @@ function clock(){
   }refreshUI();
 }
 async function requestPairing(){
+  if(state.pairing){toast('正在等待 Agent 配對，請查看本機核准頁');return;}
   if(IS_LOCAL)return connectAgent();
-  if(state.token)return connectAgent();
+  state.pairing=true;state.lastAgentError='';refreshUI();
   try{
+    const health=await fetch(`${AGENT_BASE}/api/health`,{cache:'no-store',signal:AbortSignal.timeout(3500)});if(!health.ok)throw Error('本機健康檢查失敗（HTTP '+health.status+'）');
+    if(state.token){if(await connectAgent()){toast('本機 Agent 已連線，現在可以打卡');return;}state.token=null;}
     const response=await fetch(`${AGENT_BASE}/api/pair/request`,{
       method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(6000)
     });
-    if(!response.ok)throw Error(`配對請求失敗（${response.status}）`);
+    if(response.status===429)throw Error('已有待核准配對，請在本機 http://127.0.0.1:8765/ 核准，或等待兩分鐘重新發起');if(!response.ok)throw Error(`配對請求失敗（${response.status}）`);
     const data=await response.json();
     const root=modal('連接 Windows Agent','PAIRING / OWNER APPROVAL');
-    root.append(make('div',{class:'info-box',text:'請在這台電腦上打開 http://127.0.0.1:8765/，於「配對請求」批准目前網站來源 howardaistudio.com。授權僅在本次 Agent 執行期間有效。'}));
+    root.append(make('div',{class:'info-box',text:'請在這台 Windows 電腦開啟 http://127.0.0.1:8765/，核准來自 '+location.origin+' 的配對請求。如 Chrome 要求本機網路權限，請確認網址後允許。'}));
     const status=make('p',{class:'help-text',text:'等待本機控制台核准…'});root.append(status);
     const open=make('a',{class:'secondary-button',href:'http://127.0.0.1:8765/',target:'_blank',rel:'noopener noreferrer',text:'開啟本地核准頁 ↗'});root.append(open);
     const until=Date.now()+120000;
@@ -496,16 +502,16 @@ async function requestPairing(){
       if(result.status==='APPROVED'){
         state.token=result.token;
         $('modal-backdrop').classList.add('hidden');
-        await connectAgent();log('外部 Web 已獲本機核准的限時連線');toast('已完成安全配對');return;
+        const ok=await connectAgent();if(ok){log('Office 已完成本機 Agent 授權連線');toast('本機 Agent 已連線，現在可以打卡');}else{state.token=null;toast('Agent 已核准，但 WebSocket 驗證失敗。請檢查本機網路權限後重新配對');}return;
       }
       if(['REJECTED','EXPIRED'].includes(result.status))throw Error(`配對 ${result.status}`);
     }
     throw Error('配對逾時，請重新發起');
-  } catch(error){toast(`無法連線：${error.message}`);$('modal-backdrop').classList.add('hidden');}
+  } catch(error){state.lastAgentError='無法連線本機 Agent：'+error.message+'。請檢查相同電腦、http://127.0.0.1:8765/，及 Chrome 本機網路權限';log(state.lastAgentError);toast(state.lastAgentError);$('modal-backdrop').classList.add('hidden');}finally{state.pairing=false;refreshUI();}
 }
 $('clock-button').addEventListener('click',clock);
 $('demo-toggle').addEventListener('click',()=>{if(state.running||state.clockedIn){toast('請先結束會議並打卡下班後再切換模式');return;}state.demo=!state.demo;refreshUI();toast(state.demo?'已切換為離線示範模式':'已切換為真實分頁／手動交接模式');});
-$('refresh-agent').addEventListener('click',()=>{if(!IS_LOCAL&&!state.token)requestPairing();else connectAgent();});
+$('refresh-agent').addEventListener('click',requestPairing);
 function showMeetingForm(){
   if(state.running){toast('已有會議進行中');return;}
   const root=modal('建立圓桌會議','NEW MEETING / SETUP');
