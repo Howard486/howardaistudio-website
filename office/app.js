@@ -106,6 +106,8 @@ function validateConfig(config) {
   if (!ids.has(config.chair)) throw Error('主席必須在與會者名單中');
   if (config.mode==='debate' && config.attendees.filter(id=>id!==config.chair && id!=='perplexity').length<2) throw Error('辯論至少需主席以外兩位辯手');
   if (config.mode==='relay' && ids.size<2) throw Error('接力至少需要兩位與會秘書');
+  const rounds=Number(config.discussionRounds??2);
+  if (!Number.isInteger(rounds)||rounds<1||rounds>5) throw Error('討論輪數必須介於 1 至 5 輪');
   return true;
 }
 class DemoProvider {
@@ -138,19 +140,21 @@ class MeetingOrchestrator {
   async execute(config) {
     validateConfig(config);
     const rows=[], group=config.attendees, others=group.filter(id=>id!==config.chair);
-    const session={id:`mtg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,created_at:new Date().toISOString(),topic:config.topic,chair:config.chair,attendees:[...group],mode:config.mode,rounds_log:rows,final_markdown:'',watercooler_scripts:[]};
+    const discussionRounds=Number(config.discussionRounds??2);
+    const session={id:`mtg_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,created_at:new Date().toISOString(),topic:config.topic,chair:config.chair,attendees:[...group],mode:config.mode,discussion_rounds:discussionRounds,rounds_log:rows,final_markdown:'',watercooler_scripts:[]};
     let lastInstruction='';
-    const runPhase=async(phase, people, makeContext) => {
+    const runPhase=async(phase, people, makeContext, discussionRound=null) => {
       this.checkAbort(); this.onEvent({type:'phase_start',phase,people});
       const response=await Promise.all(people.map(async id=>{
         this.checkAbort();
         const context=makeContext(id);
-        const prompt=promptFor(phase,config.topic,id,context,lastInstruction,['P3_SYNTHESIZE','P4_VERDICT','P3_MERGE'].includes(phase)||(phase==='STEP'&&id===config.chair));
+        const roundInstruction=discussionRound===null?'':('目前為第 '+discussionRound+' / '+discussionRounds+' 輪討論。請針對上一輪內容提出修正、證據與更完整的決策。');
+        const prompt=promptFor(phase,config.topic,id,context,[lastInstruction,roundInstruction].filter(Boolean).join('\n'),['P3_SYNTHESIZE','P4_VERDICT','P3_MERGE'].includes(phase)||(phase==='STEP'&&id===config.chair));
         this.onEvent({type:'agent_start',phase,agent_id:id,prompt});
         let output=await this.provider.respond({agent_id:id,phase,prompt,topic:config.topic,task:phase==='P2_EXECUTE'?context:'',signal:this.signal});
         this.checkAbort();output=clamp(output,120000);
         if(!output.trim()) throw Error(`${AGENT_MAP[id].name} 沒有輸出內容`);
-        const result={phase,agent_id:id,prompt,output,completed_at:new Date().toISOString()};
+        const result={phase,discussion_round:discussionRound,agent_id:id,prompt,output,completed_at:new Date().toISOString()};
         rows.push(result);this.onEvent({type:'agent_complete',...result});return result;
       }));
       this.onEvent({type:'phase_complete',phase,results:response});
@@ -163,30 +167,47 @@ class MeetingOrchestrator {
     };
     try {
       if(config.mode==='consensus') {
-        const p1=await runPhase('P1_PROPOSE',group,()=> '');
-        await breakBeforeNext('P2_CRITIQUE');
-        const p2=await runPhase('P2_CRITIQUE',group,id=>limitedContexts(p1.filter(r=>r.agent_id!==id)));
+        await runPhase('P1_PROPOSE',group,()=> '');
+        for(let round=1;round<=discussionRounds;round++){
+          await breakBeforeNext('P2_CRITIQUE / '+round+'/'+discussionRounds);
+          await runPhase('P2_CRITIQUE',group,id=>limitedContexts(rows.filter(r=>r.agent_id!==id)),round);
+        }
         await breakBeforeNext('P3_SYNTHESIZE');
-        await runPhase('P3_SYNTHESIZE',[config.chair],()=>limitedContexts([...p1,...p2]));
+        await runPhase('P3_SYNTHESIZE',[config.chair],()=>limitedContexts(rows));
       } else if(config.mode==='debate') {
-        const debaters=others.filter(id=>id!=='perplexity');const pro=debaters.filter((_,i)=>i%2===0),con=debaters.filter((_,i)=>i%2===1);
-        const p1=await runPhase('P1_PRO',pro,()=>'');
-        await breakBeforeNext('P2_CON');const p2=await runPhase('P2_CON',con,()=>limitedContexts(p1));
-        await breakBeforeNext('P3_REBUTTAL');const p3=await runPhase('P3_REBUTTAL',pro,()=>limitedContexts([...p1,...p2]));
-        if(group.includes('perplexity')&&config.chair!=='perplexity') {
-          await breakBeforeNext('P3_FACTCHECK');await runPhase('P3_FACTCHECK',['perplexity'],()=>limitedContexts([...p1,...p2,...p3]));
+        const debaters=others.filter(id=>id!=='perplexity');
+        const pro=debaters.filter((_,i)=>i%2===0),con=debaters.filter((_,i)=>i%2===1);
+        await runPhase('P1_PRO',pro,()=>'');
+        for(let round=1;round<=discussionRounds;round++){
+          await breakBeforeNext('P2_CON / '+round+'/'+discussionRounds);
+          await runPhase('P2_CON',con,()=>limitedContexts(rows),round);
+          await breakBeforeNext('P3_REBUTTAL / '+round+'/'+discussionRounds);
+          await runPhase('P3_REBUTTAL',pro,()=>limitedContexts(rows),round);
+        }
+        if(group.includes('perplexity')&&config.chair!=='perplexity'){
+          await breakBeforeNext('P3_FACTCHECK');await runPhase('P3_FACTCHECK',['perplexity'],()=>limitedContexts(rows));
         }
         await breakBeforeNext('P4_VERDICT');await runPhase('P4_VERDICT',[config.chair],()=>limitedContexts(rows));
       } else if(config.mode==='collaborate') {
-        const p1=await runPhase('P1_DISPATCH',[config.chair],()=>`與會者：${others.map(id=>`${id}(${AGENT_MAP[id].skill})`).join('、')}`);
+        const p1=await runPhase('P1_DISPATCH',[config.chair],()=>others.map(id=>id+' ('+AGENT_MAP[id].skill+')').join('、'));
         const jobs=extractJsonTasks(p1[0].output,others);
-        await breakBeforeNext('P2_EXECUTE');await runPhase('P2_EXECUTE',others,id=>jobs.find(job=>job.agent_id===id)?.task||'執行子任務');
+        for(let round=1;round<=discussionRounds;round++){
+          await breakBeforeNext('P2_EXECUTE / '+round+'/'+discussionRounds);
+          await runPhase('P2_EXECUTE',others,id=>{
+            const task=jobs.find(job=>job.agent_id===id)?.task||'執行子任務';
+            if(round===1)return task;
+            const previous=rows.filter(r=>r.agent_id===id&&r.phase==='P2_EXECUTE').at(-1)?.output||'';
+            return task+'\n\n上一輪成果：\n'+clamp(previous,7000)+'\n\n請修訂並補足驗收與風險。';
+          },round);
+        }
         await breakBeforeNext('P3_MERGE');await runPhase('P3_MERGE',[config.chair],()=>limitedContexts(rows));
       } else {
         const order=[...others,config.chair];
-        for(let i=0;i<order.length;i++) {
-          if(i) await breakBeforeNext(`STEP_${i+1}`);
-          await runPhase('STEP',[order[i]],()=>i?read(rows,order[i-1]):'第一棒：請建立初稿。');
+        for(let round=1;round<=discussionRounds;round++){
+          for(let i=0;i<order.length;i++){
+            if(round>1||i)await breakBeforeNext('STEP / '+round+'/'+discussionRounds);
+            await runPhase('STEP',[order[i]],()=>rows.length?rows.at(-1).output:'第一棒：請建立初稿。',round);
+          }
         }
       }
       session.final_markdown=rows.at(-1)?.output||'';
@@ -573,11 +594,12 @@ function showMeetingForm(){
   const group=make('div',{class:'field',style:'margin-top:22px'});group.append(make('label',{text:'與會秘書（至少兩位）'}));
   const chips=make('div',{class:'agent-chips'});AGENTS.forEach(a=>{const label=make('label',{class:'agent-chip'});const check=make('input',{type:'checkbox',value:a.id});check.checked=true;check.addEventListener('change',()=>{const opts=[...chips.querySelectorAll('input:checked')].map(n=>n.value);if(!opts.includes(chair.value))chair.value=opts[0]||'';});label.append(check,make('span',{text:a.name}));chips.append(label);});group.append(chips);form.append(group);
   const chair=make('select',{id:'chair'});AGENTS.forEach(a=>chair.append(make('option',{value:a.id,text:`${a.name} — ${a.role}`})));chair.value='chatgpt';
-  const mode=make('select',{id:'exchange-mode'},[make('option',{value:'demo',text:'離線示範（完整自動流程；不呼叫 AI）'}),make('option',{value:'manual',text:'手動交接（真正將回覆貼回會議）'})]);mode.value=state.demo?'demo':'manual';
-  form.append(make('div',{class:'modal-grid'},[make('div',{class:'field'},[make('label',{for:'chair',text:'會議主席'}),chair]),make('div',{class:'field'},[make('label',{for:'exchange-mode',text:'內容來源'}),mode])]));
+  const rounds=make('select',{id:'discussion-rounds'},[1,2,3,4,5].map(value=>make('option',{value:String(value),text:value+' 輪'})));rounds.value='2';
+   const mode=make('select',{id:'exchange-mode'},[make('option',{value:'demo',text:'離線示範（完整自動流程；不呼叫 AI）'}),make('option',{value:'manual',text:'手動交接（真正將回覆貼回會議）'})]);mode.value=state.demo?'demo':'manual';
+  form.append(make('div',{class:'modal-grid'},[make('div',{class:'field'},[make('label',{for:'chair',text:'會議主席'}),chair]),make('div',{class:'field'},[make('label',{for:'exchange-mode',text:'內容來源'}),mode]),make('div',{class:'field'},[make('label',{for:'discussion-rounds',text:'討論輪數（預設 2 輪）'}),rounds])]));
   const warn=make('div',{class:'info-box',text:'示範流程不使用任何外部模型。手動交接流程會提供 Prompt 與站點連結，由你自行在各 AI 網頁產生回答後貼入，不會自動擷取第三方服務內容。'});form.append(warn);
   const actions=make('div',{class:'modal-actions'});const cancel=make('button',{class:'secondary-button',type:'button',text:'取消'});cancel.onclick=hideModal;const submit=make('button',{class:'primary-button',type:'submit',text:'◉ 開始會議'});actions.append(cancel,submit);form.append(actions);root.append(form);
-  form.addEventListener('submit',async e=>{e.preventDefault();const config={topic:topic.value.trim(),chair:chair.value,attendees:[...chips.querySelectorAll('input:checked')].map(x=>x.value),mode:modeChoice.value,exchange:mode.value};try{validateConfig(config);}catch(err){toast(err.message);return;}if(!state.clockedIn){state.clockedIn=true;scene.setStatus(true);log('為開始會議，自動啟用本地秘書場景（不啟動第三方操作）');}await startMeeting(config);});
+  form.addEventListener('submit',async e=>{e.preventDefault();const config={topic:topic.value.trim(),chair:chair.value,attendees:[...chips.querySelectorAll('input:checked')].map(x=>x.value),mode:modeChoice.value,exchange:mode.value,discussionRounds:Number(rounds.value)};try{validateConfig(config);}catch(err){toast(err.message);return;}if(!state.clockedIn){state.clockedIn=true;scene.setStatus(true);log('為開始會議，自動啟用本地秘書場景（不啟動第三方操作）');}await startMeeting(config);});
 }
 function contentBox(text){return make('pre',{class:'report-viewer',text});}
 function formatResult(root,session){
@@ -593,14 +615,25 @@ function downloadMeeting(session){const blob=exportMarkdown(session),url=URL.cre
 function askManual(ctx){return new Promise((resolve,reject)=>{
   if(ctx.signal?.aborted){reject(new DOMException('Cancelled','AbortError'));return;}
   const root=$('modal-content');root.replaceChildren();$('modal-title').textContent=`${AGENT_MAP[ctx.agent_id].name} · 等待交接`;$('modal-kicker').textContent=ctx.phase;
-  const hint=make('p',{class:'help-text',text:'1. 複製 Prompt。2. 在對應 AI 網頁自行送出。3. 將回覆貼入下方。此功能不讀取外部網站 DOM 或登入資訊。'});
+  const hint=make('p',{class:'help-text',text:'可一鍵複製 Prompt 並開啟 AI 網站。請在該站貼上、送出，完成後複製回答，回來點「讀取剪貼簿回答」。目前不會自動送出或讀取第三方網站。'});
   const prompt=contentBox(ctx.prompt);prompt.style.maxHeight='170px';
   const answer=make('textarea',{rows:'7',placeholder:'貼上此位秘書的完整 Markdown 回覆…'});
   const field=make('div',{class:'field'},[make('label',{text:'回覆內容（必填）'}),answer]);
   const actions=make('div',{class:'modal-actions'});const open=make('a',{class:'secondary-button',href:AGENT_MAP[ctx.agent_id].url,target:'_blank',rel:'noopener noreferrer',text:'開啟 AI 網頁 ↗'});
   const copy=make('button',{class:'secondary-button',type:'button',text:'複製 Prompt'});copy.onclick=async()=>{try{await navigator.clipboard.writeText(ctx.prompt);toast('已複製 Prompt');}catch{toast('無法自動複製，請選取上方內容');}};
   const submit=make('button',{class:'primary-button',type:'button',text:'提交這一棒 →'});submit.onclick=()=>{if(!answer.value.trim()){toast('請先貼入回覆內容');return;}resolve(answer.value);};
-  actions.append(open,copy,submit);root.append(hint,prompt,field,actions);
+  const guided=make('button',{class:'secondary-button',type:'button',text:'↗ 複製並開啟 AI 網站'});
+   guided.onclick=async()=>{
+     window.open(AGENT_MAP[ctx.agent_id].url,'_blank','noopener,noreferrer');
+     try{await navigator.clipboard.writeText(ctx.prompt);toast('Prompt 已複製，請在 AI 網頁貼上並送出');}
+     catch{toast('瀏覽器不允許寫入剪貼簿，請按「複製 Prompt」或手動選取');}
+   };
+   const paste=make('button',{class:'secondary-button',type:'button',text:'↓ 讀取剪貼簿回答'});
+   paste.onclick=async()=>{
+     try{const content=await navigator.clipboard.readText();if(!content.trim()){toast('剪貼簿沒有文字');return;}answer.value=content;answer.focus();toast('已帶入回覆，請確認內容再提交');}
+     catch{toast('Chrome 未允許讀取剪貼簿，請手動 Ctrl+V 貼入');}
+   };
+   actions.append(guided,copy,paste,submit);root.append(hint,prompt,field,actions);
   ctx.signal?.addEventListener('abort',()=>reject(new DOMException('Cancelled','AbortError')),{once:true});
 });}
 function parseWatercooler(text){
@@ -612,7 +645,7 @@ function parseWatercooler(text){
 }
 async function startMeeting(config){
   state.running=true;state.abort=new AbortController();state.rounds=0;state.pauseNext=false;
-  refreshUI();scene.setMeeting(true,config.attendees);log(`會議開始：${config.topic.slice(0,55)} / ${MODES[config.mode]}`);
+  refreshUI();scene.setMeeting(true,config.attendees);log(`會議開始：${config.topic.slice(0,55)} / ${MODES[config.mode]} / 討論 ${config.discussionRounds??2} 輪`);
   const root=modal('會議執行中','MEETING / IN PROGRESS');
   const progress=make('div',{class:'progress-strip'},[make('span',{class:'progress-dot'}),make('span',{text:'正在建立會議…'})]);
   const transcript=make('div',{class:'activity-list'});transcript.style.maxHeight='230px';
@@ -655,7 +688,7 @@ async function showHistory(){if(state.running){toast('請先完成或停止會�
     const del=make('button',{class:'mini-button',text:'刪除'});del.onclick=async()=>{if(!confirm('確定刪除此筆本機會議紀錄？'))return;await deleteMeeting(session.id);showHistory();};actions.append(view,dl,del);line.append(actions);root.append(line);
   });
 }
-function help(){if(state.running){toast('請先完成或停止會議');return;}const root=modal('操作說明','GETTING STARTED');root.append(make('p',{class:'help-text',text:'① 打卡：示範模式不需本地 Agent，五位秘書會自行漫遊。② 點選圓桌建立會議，選擇主席、與會者與四種模式。③ 示範模式會跑完整狀態機但不呼叫外部 AI；手動交接模式會產出提示詞，讓你自行到各網站操作並貼回 Markdown。④ 會議完成可複製報告、匯出 .md、回放歷史。⑤ 真實分頁管理須先安裝並啟動 HVA Windows Agent。'}));root.append(make('div',{class:'warning-box',text:'限制：網站分頁存在不代表已登入；本 MVP 不自動讀取或操作第三方 AI 網頁，也不保證「零成本」，各服務仍有使用額度或訂閱限制。'}));}
+function help(){if(state.running){toast('請先完成或停止會議');return;}const root=modal('操作說明','GETTING STARTED');root.append(make('p',{class:'help-text',text:'① 打卡：示範模式不需本地 Agent。② 點選圓桌可設定 1–5 輪討論，預設 2 輪。③ 真實手動交接可一鍵複製並開啟 AI 網頁、從剪貼簿帶入回答；仍須本人在 AI 網站送出並複製回覆。④ 會議完成可匯出 Markdown 與歷史紀錄。⑤ 自動送出並讀取 AI 網頁尚需額外介接。'}));root.append(make('div',{class:'warning-box',text:'限制：網站分頁存在不代表已登入；本 MVP 不自動讀取或操作第三方 AI 網頁，也不保證「零成本」，各服務仍有使用額度或訂閱限制。'}));}
 for(const id of ['rail-meet','quick-meet'])$(id).addEventListener('click',showMeetingForm);
 for(const id of ['rail-history','quick-history'])$(id).addEventListener('click',showHistory);
 $('rail-help').addEventListener('click',help);
@@ -668,7 +701,7 @@ log('系統啟動：像素辦公室場景已載入');refreshUI();if(IS_LOCAL)con
 document.getElementById('quick-meeting').addEventListener('submit',async e=>{
  e.preventDefault();if(state.running){toast('會議進行中');return;}
  const f=e.currentTarget;
- const cfg={topic:f.querySelector('#quick-topic').value.trim(),chair:f.querySelector('#quick-chair').value,attendees:[...f.querySelectorAll('#quick-attendees input:checked')].map(x=>x.value),mode:f.querySelector('#quick-mode').value,exchange:state.demo?'demo':'manual'};
+ const cfg={topic:f.querySelector('#quick-topic').value.trim(),chair:f.querySelector('#quick-chair').value,attendees:[...f.querySelectorAll('#quick-attendees input:checked')].map(x=>x.value),mode:f.querySelector('#quick-mode').value,exchange:state.demo?'demo':'manual',discussionRounds:Number(f.querySelector('#quick-rounds').value)};
  try{validateConfig(cfg)}catch(err){toast(err.message);return;}
  if(!state.clockedIn){state.clockedIn=true;scene.setStatus(true);log('啟動本地秘書場景');}
  await startMeeting(cfg);
