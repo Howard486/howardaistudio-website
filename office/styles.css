@@ -20,3 +20,10 @@
 #office-scene{background:#273746}
 @media(max-width:1000px){.inspector{display:flex;grid-row:2;grid-column:2;max-height:none;overflow:visible}.side-checks{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:650px){.inspector{grid-column:1;grid-row:3}.side-checks{grid-template-columns:1fr 1fr}}
+
+.modal-header-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.danger-stop{border:1px solid #ce8787!important;color:#ffe8e8!important;background:#5e2d38!important;padding:10px 13px;font-size:12px;border-radius:8px}
+.danger-stop:hover{background:#73313e!important}
+.workspace-tools{flex-wrap:wrap;gap:8px}
+.download-bat{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+@media(max-width:650px){.modal-header-actions{gap:6px}.danger-stop{padding:9px;font-size:11px}.download-bat{font-size:11px}}

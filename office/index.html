@@ -13,7 +13,7 @@
   <header class="topbar">
     <div class="brand"><div class="brand-mark">H<span>A</span>I<span class="dot">.</span></div><span class="brand-divider"></span><div><strong>SECRETARY OFFICE</strong><small>VIRTUAL WORKSPACE <em>·</em> BETA 0.4</small></div></div>
     <div class="top-center"><span class="live-light"></span> PRIVATE WORKSPACE <span class="text-mono" id="clock">--:--</span></div>
-    <div class="top-actions"><button id="demo-toggle" class="ghost-button">● 示範模式</button><button id="clock-button" class="primary-button">◉ 全員打卡</button></div>
+    <div class="top-actions"><button id="global-stop-meeting" class="secondary-button danger-stop hidden" type="button">■ 停止會議</button><button id="demo-toggle" class="ghost-button">● 示範模式</button><button id="clock-button" class="primary-button">◉ 全員打卡</button></div>
   </header>
   <div class="body-grid">
     <aside class="rail">
@@ -24,7 +24,7 @@
       <span class="rail-spacer"></span><span class="rail-version">v0.4</span>
     </aside>
     <main class="workspace">
-      <div class="workspace-heading"><div><div class="eyebrow">THE OFFICE / FLOOR 01</div><h1>虛擬協作辦公室 <span class="office-state" id="office-state">● 待機中</span></h1><p>讓多位 AI 助理在同一個空間合作思考。</p></div><div class="workspace-tools"><span id="connection-label" class="connection-pill">○ 本機 Agent 檢查中</span><button class="subtle-btn" id="refresh-agent" title="重新檢查本機 Agent">↻</button></div></div>
+      <div class="workspace-heading"><div><div class="eyebrow">THE OFFICE / FLOOR 01</div><h1>虛擬協作辦公室 <span class="office-state" id="office-state">● 待機中</span></h1><p>讓多位 AI 助理在同一個空間合作思考。</p></div><div class="workspace-tools"><span id="connection-label" class="connection-pill">○ 本機 Agent 檢查中</span><button class="subtle-btn" id="refresh-agent" title="重新檢查本機 Agent">↻</button><a class="subtle-btn download-bat" href="/office/start-agent.bat" download="start-agent.bat" title="下載 Windows Agent 啟動批次檔，需搭配 HVASecretaryAgent.exe">↓ 下載 BAT</a></div></div>
       <div class="scene-shell"><div class="scene-top"><span><span class="green-dot"></span> HOWARD AI STUDIO / MAIN FLOOR</span><span class="scene-indicators"><span>◎ 30 × 19 GRID</span><span id="room-population">00 / 05 ONLINE</span></span></div><canvas id="office-scene" width="960" height="608" aria-label="可點擊互動的像素風辦公室：點圓桌召開會議，點秘書查看狀態"></canvas><div class="scene-footer"><span>✥ 點擊地面移動角色 · 點擊圓桌召集會議</span><span id="scene-context">OFFICE STATUS: IDLE</span></div></div>
       <section class="bottom-panels"><div class="panel activity"><div class="panel-title"><span>◷ 即時動態</span><small>LIVE ACTIVITY</small></div><div class="activity-list" id="activity-list" aria-live="polite"><p class="dim">辦公室已就緒，等待打卡。</p></div></div><div class="panel shortcuts"><div class="panel-title"><span>⌘ 快速操作</span><small>QUICK ACTIONS</small></div><div class="quick-grid"><button id="quick-meet"><b>◉</b><span>召開會議<small>START MEETING</small></span></button><button id="quick-history"><b>▤</b><span>歷史報告<small>MEETING LOGS</small></span></button></div><div class="mini-tip">使用示範模式即可離線體驗完整四種會議流程；實際 AI 回覆採手動交接。</div></div></section>
     </main>
@@ -45,7 +45,7 @@
   </div>
 </div>
 <div id="modal-backdrop" class="modal-backdrop hidden" role="presentation">
-  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><div><span class="eyebrow" id="modal-kicker">OFFICE CONTROL</span><h2 id="modal-title">建立會議</h2></div><button class="close-button" id="modal-close" aria-label="關閉視窗">×</button></div><div class="modal-content" id="modal-content"></div></section>
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><div><span class="eyebrow" id="modal-kicker">OFFICE CONTROL</span><h2 id="modal-title">建立會議</h2></div><div class="modal-header-actions"><button id="modal-stop-meeting" class="secondary-button danger-stop hidden" type="button">■ 停止會議</button><button class="close-button" id="modal-close" aria-label="關閉視窗／停止進行中的會議">×</button></div></div><div class="modal-content" id="modal-content"></div></section>
 </div>
 <div class="toast-region" id="toast-region" aria-live="polite"></div>
 <script defer src="/office/app.js"></script></body>

@@ -408,11 +408,21 @@ const scene=new OfficeScene($('office-scene'),{onMeetingClick:()=>showMeetingFor
 function log(message){state.activity.unshift({time:new Date().toLocaleTimeString('zh-TW',{hour12:false}),text:message});state.activity=state.activity.slice(0,30);const root=$('activity-list');root.replaceChildren(...state.activity.slice(0,8).map(item=>make('p',{},[make('time',{text:item.time}),make('span',{text:item.text})])));}
 function toast(text){const node=make('div',{class:'toast',text});$('toast-region').append(node);setTimeout(()=>node.remove(),4300);}
 function modal(title,kicker='OFFICE CONTROL'){const backdrop=$('modal-backdrop');$('modal-title').textContent=title;$('modal-kicker').textContent=kicker;$('modal-content').replaceChildren();backdrop.classList.remove('hidden');$('modal-close').focus();return $('modal-content');}
-function hideModal(){if(state.running){toast('會議執行期間請使用「停止會議」');return;} $('modal-backdrop').classList.add('hidden');}
+function requestStopMeeting(){
+  if(!state.running || !state.abort || state.abort.signal.aborted)return false;
+  state.abort.abort();
+  log('使用者要求停止本次會議');
+  toast('正在停止會議，請稍候…');
+  return true;
+}
+function hideModal(){if(state.running){requestStopMeeting();return;} $('modal-backdrop').classList.add('hidden');}
 $('modal-close').addEventListener('click',hideModal);
+$('modal-stop-meeting').addEventListener('click',requestStopMeeting);
+$('global-stop-meeting').addEventListener('click',requestStopMeeting);
 $('modal-backdrop').addEventListener('click',e=>{if(e.target===$('modal-backdrop'))hideModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
 function refreshUI(){
+  for(const id of ['global-stop-meeting','modal-stop-meeting'])$(id).classList.toggle('hidden',!state.running);
   $('clock-button').textContent=state.clockedIn?'◌ 全員下班':'◉ 全員打卡';$('clock-button').classList.toggle('off',state.clockedIn);
   $('demo-toggle').textContent=state.demo?'● 示範模式':'◯ 真實分頁模式';
   $('office-state').textContent=state.running?'● 會議進行中':state.clockedIn?'● 已打卡上班':'● 待機中';
@@ -530,6 +540,7 @@ function formatResult(root,session){
 }
 function downloadMeeting(session){const blob=exportMarkdown(session),url=URL.createObjectURL(blob),anchor=make('a',{href:url,download:`${session.id}.md`});document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function askManual(ctx){return new Promise((resolve,reject)=>{
+  if(ctx.signal?.aborted){reject(new DOMException('Cancelled','AbortError'));return;}
   const root=$('modal-content');root.replaceChildren();$('modal-title').textContent=`${AGENT_MAP[ctx.agent_id].name} · 等待交接`;$('modal-kicker').textContent=ctx.phase;
   const hint=make('p',{class:'help-text',text:'1. 複製 Prompt。2. 在對應 AI 網頁自行送出。3. 將回覆貼入下方。此功能不讀取外部網站 DOM 或登入資訊。'});
   const prompt=contentBox(ctx.prompt);prompt.style.maxHeight='170px';
@@ -555,7 +566,7 @@ async function startMeeting(config){
   const progress=make('div',{class:'progress-strip'},[make('span',{class:'progress-dot'}),make('span',{text:'正在建立會議…'})]);
   const transcript=make('div',{class:'activity-list'});transcript.style.maxHeight='230px';
   const pause=make('button',{class:'secondary-button',text:'⏸ 下一輪暫停並插話'});pause.onclick=()=>{state.pauseNext=true;toast('已在下一輪切換點加入暫停');};
-  const abort=make('button',{class:'secondary-button',text:'■ 停止會議'});abort.onclick=()=>{state.abort.abort();toast('已請求停止會議');};
+  const abort=make('button',{class:'secondary-button danger-stop',text:'■ 停止會議'});abort.onclick=requestStopMeeting;
   const actions=make('div',{class:'modal-actions'},[pause,abort]);root.append(progress,transcript,actions);
   const events=e=>{
     if(e.type==='phase_start'){progress.lastChild.textContent=`執行階段：${e.phase}（${e.people.map(x=>AGENT_MAP[x].name).join(' / ')}）`;log(`進入 ${e.phase} 階段`);}
@@ -565,6 +576,7 @@ async function startMeeting(config){
   const onBreak=async({nextPhase})=>{
     if(config.exchange==='demo'&&!state.pauseNext){await new Promise(r=>setTimeout(r,650));return '';}
     state.pauseNext=false;return new Promise((resolve,reject)=>{
+       if(state.abort.signal.aborted){reject(new DOMException('Cancelled','AbortError'));return;}
       $('modal-title').textContent='會議暫停 · 老闆插話';$('modal-kicker').textContent=`NEXT / ${nextPhase}`;
       root.replaceChildren(make('p',{class:'help-text',text:'請提供下一輪要注意的新指令；不需要補充可直接繼續。已完成的回合不會重新執行。'}));
       const input=make('textarea',{rows:'4',placeholder:'例如：聚焦 Windows 安全性與維運成本…'});root.append(make('div',{class:'field'},[make('label',{text:'新增指令'}),input]));

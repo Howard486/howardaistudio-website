@@ -17,8 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Syntax check Office
-        run: node --check office/app.js
+      - name: Check Office syntax and meeting controls
+        run: |
+          node --check office/app.js
+          node --test office/meeting-controls.test.mjs
       - name: Publish scope
         run: echo "Deploying to the configured Cloudflare account. Workers.dev will be public unless Cloudflare Access protects it."
       - name: Prepare static asset directory
