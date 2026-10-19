@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a1422">
+<title>Howard AI Studio — AI Secretary Office</title>
+<link rel="stylesheet" href="/office/styles.css">
+
+
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">H<span>A</span>I<span class="dot">.</span></div><span class="brand-divider"></span><div><strong>SECRETARY OFFICE</strong><small>VIRTUAL WORKSPACE <em>·</em> BETA 0.4</small></div></div>
+    <div class="top-center"><span class="live-light"></span> PRIVATE WORKSPACE <span class="text-mono" id="clock">--:--</span></div>
+    <div class="top-actions"><button id="demo-toggle" class="ghost-button">● 示範模式</button><button id="clock-button" class="primary-button">◉ 全員打卡</button></div>
+  </header>
+  <div class="body-grid">
+    <aside class="rail">
+      <div class="rail-icon active" title="虛擬辦公室" aria-label="虛擬辦公室">▦</div>
+      <button id="rail-meet" class="rail-icon" aria-label="召開會議" title="召開會議">◉</button>
+      <button id="rail-history" class="rail-icon" aria-label="歷史紀錄" title="歷史紀錄">▤</button>
+      <button id="rail-help" class="rail-icon" aria-label="操作說明" title="操作說明">?</button>
+      <span class="rail-spacer"></span><span class="rail-version">v0.4</span>
+    </aside>
+    <main class="workspace">
+      <div class="workspace-heading"><div><div class="eyebrow">THE OFFICE / FLOOR 01</div><h1>虛擬協作辦公室 <span class="office-state" id="office-state">● 待機中</span></h1><p>讓多位 AI 助理在同一個空間合作思考。</p></div><div class="workspace-tools"><span id="connection-label" class="connection-pill">○ 本機 Agent 檢查中</span><button class="subtle-btn" id="refresh-agent" title="重新檢查本機 Agent">↻</button></div></div>
+      <div class="scene-shell"><div class="scene-top"><span><span class="green-dot"></span> HOWARD AI STUDIO / MAIN FLOOR</span><span class="scene-indicators"><span>◎ 30 × 19 GRID</span><span id="room-population">00 / 05 ONLINE</span></span></div><canvas id="office-scene" width="960" height="608" aria-label="可點擊互動的像素風辦公室：點圓桌召開會議，點秘書查看狀態"></canvas><div class="scene-footer"><span>✥ 點擊地面移動角色 · 點擊圓桌召集會議</span><span id="scene-context">OFFICE STATUS: IDLE</span></div></div>
+      <section class="bottom-panels"><div class="panel activity"><div class="panel-title"><span>◷ 即時動態</span><small>LIVE ACTIVITY</small></div><div class="activity-list" id="activity-list" aria-live="polite"><p class="dim">辦公室已就緒，等待打卡。</p></div></div><div class="panel shortcuts"><div class="panel-title"><span>⌘ 快速操作</span><small>QUICK ACTIONS</small></div><div class="quick-grid"><button id="quick-meet"><b>◉</b><span>召開會議<small>START MEETING</small></span></button><button id="quick-history"><b>▤</b><span>歷史報告<small>MEETING LOGS</small></span></button></div><div class="mini-tip">使用示範模式即可離線體驗完整四種會議流程；實際 AI 回覆採手動交接。</div></div></section>
+    </main>
+    <aside class="inspector">
+<div class="inspector-title"><div><span class="eyebrow">MEETING SETTINGS</span><h2>會議設定面板</h2></div><span class="headcount">05</span></div>
+<p class="inspector-copy">設定議題、主席與與會秘書，一鍵召集圓桌會議。</p>
+<form class="side-form" id="quick-meeting">
+<label for="quick-topic">◎ 會議主題</label><textarea id="quick-topic" maxlength="2500" required rows="3">如何提升 2D 虛擬辦公室的載入速度與文字搬移效率？</textarea>
+<label for="quick-chair">♛ 會議主席</label><select id="quick-chair"><option value="chatgpt">ChatGPT</option><option value="gemini">Gemini</option><option value="claude">Claude</option><option value="copilot">Copilot</option><option value="perplexity">Perplexity</option></select>
+<label>♧ 與會人員</label><div class="side-checks" id="quick-attendees">
+<label><input type="checkbox" value="gemini" checked> Gemini</label><label><input type="checkbox" value="chatgpt" checked> ChatGPT</label><label><input type="checkbox" value="claude" checked> Claude</label><label><input type="checkbox" value="copilot" checked> Copilot</label><label><input type="checkbox" value="perplexity" checked> Perplexity</label></div>
+<label for="quick-mode">▤ 會議類型</label><select id="quick-mode"><option value="consensus">共同合作找出最佳解</option><option value="debate">辯論大會</option><option value="collaborate">共同協作</option><option value="relay">接力作業</option></select>
+<button type="submit" class="launch-button">▶ 開始會議</button><small class="side-info">示範不呼叫外部 AI；真實結果使用手動交接。</small></form>
+<div class="inspector-divider"></div><div class="inspector-title mini"><div><span class="eyebrow">TEAM DIRECTORY</span><h2>秘書團隊</h2></div><span class="headcount">05</span></div>
+<div id="agent-list" class="agent-list"></div><div id="mode-preview" class="mode-preview"></div>
+<div class="inspector-bottom"><span class="green-dot"></span> 本地資料優先 <small>IndexedDB 儲存紀錄</small></div>
+</aside>
+  </div>
+</div>
+<div id="modal-backdrop" class="modal-backdrop hidden" role="presentation">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><div><span class="eyebrow" id="modal-kicker">OFFICE CONTROL</span><h2 id="modal-title">建立會議</h2></div><button class="close-button" id="modal-close" aria-label="關閉視窗">×</button></div><div class="modal-content" id="modal-content"></div></section>
+</div>
+<div class="toast-region" id="toast-region" aria-live="polite"></div>
+<script defer src="/office/app.js"></script></body>
+</html>
