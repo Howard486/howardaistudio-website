@@ -473,7 +473,7 @@ async function requestPairing(){
     if(!response.ok)throw Error(`配對請求失敗（${response.status}）`);
     const data=await response.json();
     const root=modal('連接 Windows Agent','PAIRING / OWNER APPROVAL');
-    root.append(make('div',{class:'info-box',text:'請在這台電腦上打開 http://127.0.0.1:8765/，於「配對請求」批准目前網站來源 hvasec.com。授權僅在本次 Agent 執行期間有效。'}));
+    root.append(make('div',{class:'info-box',text:'請在這台電腦上打開 http://127.0.0.1:8765/，於「配對請求」批准目前網站來源 howardaistudio.com。授權僅在本次 Agent 執行期間有效。'}));
     const status=make('p',{class:'help-text',text:'等待本機控制台核准…'});root.append(status);
     const open=make('a',{class:'secondary-button',href:'http://127.0.0.1:8765/',target:'_blank',rel:'noopener noreferrer',text:'開啟本地核准頁 ↗'});root.append(open);
     const until=Date.now()+120000;
