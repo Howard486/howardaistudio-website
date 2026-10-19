@@ -350,7 +350,7 @@ const make=(tag,attrs={},children=[])=>{const el=document.createElement(tag);for
 const IS_LOCAL=['127.0.0.1:8765','localhost:8765'].includes(location.host);
 const AGENT_BASE=IS_LOCAL?'':'http://127.0.0.1:8765';
 const WS_BASE=IS_LOCAL?`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`:'ws://127.0.0.1:8765';
-const state={demo:true,clockedIn:false,ws:null,token:window.__HVA_OWNER_TOKEN__??null,connected:false,agentStatus:{},running:false,abort:null,pauseNext:false,rounds:0,activity:[],liveDialogues:DEFAULT_BARKS,pairing:false,lastAgentError:''};
+const state={demo:true,clockedIn:false,ws:null,token:window.__HVA_OWNER_TOKEN__??null,connected:false,transport:null,agentStatus:{},running:false,abort:null,pauseNext:false,rounds:0,activity:[],liveDialogues:DEFAULT_BARKS,pairing:false,lastAgentError:''};
 
 OfficeScene.prototype.iso=function(x,y,z){return [460+(x-y)*18.3,82+(x+y)*9.15-(z||0)];};
 OfficeScene.prototype.click=function(e){
@@ -429,7 +429,7 @@ function refreshUI(){
   $('office-state').textContent=state.running?'● 會議進行中':state.clockedIn?'● 已打卡上班':'● 待機中';
   $('room-population').textContent=`${state.clockedIn?'05':'00'} / 05 ONLINE`;
   $('scene-context').textContent=state.running?'OFFICE STATUS: IN MEETING':state.clockedIn?'OFFICE STATUS: ONLINE':'OFFICE STATUS: IDLE';
-  $('connection-label').textContent=state.connected?'● 本機 Agent 已連線':state.pairing?'◌ Agent 配對中':state.lastAgentError?'⚠ Agent 連線失敗':(!IS_LOCAL&&!state.token?'○ 請先配對 Agent':'○ 本機 Agent 未連線');$('connection-label').title=state.lastAgentError||'需要在本機 Agent 控制台核准配對';
+  $('connection-label').textContent=state.connected?('● 本機 Agent 已連線'+(state.transport==='http'?'（HTTP）':'')):state.pairing?'◌ Agent 配對中':state.lastAgentError?'⚠ Agent 連線失敗':(!IS_LOCAL&&!state.token?'○ 請先配對 Agent':'○ 本機 Agent 未連線');$('connection-label').title=state.lastAgentError||'需要在本機 Agent 控制台核准配對';
   const list=$('agent-list');list.replaceChildren(...AGENTS.map(agent=>{
     const status=state.demo?(state.clockedIn?'DEMO READY':'OFFLINE'):(state.agentStatus[agent.id]?.status||'NOT_OPEN');
     const ready=status==='TAB_OPEN'||status==='DEMO READY';
@@ -446,6 +446,51 @@ function showAgent(id){if(state.running){toast('會議進行中，請先完成�
  root.append(make('p',{class:'help-text',text:`專長：${a.skill}。點擊網站連結可在原生瀏覽器手動使用 ${a.platform}。目前不會自動讀取帳號、對話或 Cookie。`}));
  const row=make('div',{class:'modal-actions'});const open=make('a',{class:'secondary-button',href:a.url,target:'_blank',rel:'noopener noreferrer',text:`開啟 ${a.platform} ↗`});row.append(open);root.append(row);
 }
+async function connectHttpAgent(){
+  if(!state.token)return false;
+  try{
+    const response=await fetch(`${AGENT_BASE}/api/status`,{method:'GET',headers:{Authorization:'Bearer '+state.token},cache:'no-store',signal:AbortSignal.timeout(6000)});
+    if(!response.ok)throw Error('HTTP 授權驗證失敗（'+response.status+'）');
+    const data=await response.json();
+    state.agentStatus=data.agents||{};
+    state.transport='http';
+    state.connected=true;
+    state.lastAgentError='';
+    log('Agent 已通過 HTTP Token 驗證；使用 HTTP 備援模式');
+    refreshUI();
+    return true;
+  }catch(error){
+    state.connected=false;
+    state.transport=null;
+    state.lastAgentError='配對已核准，但 WebSocket 與 HTTP 驗證均失敗：'+String(error?.message||error);
+    log(state.lastAgentError);
+    refreshUI();
+    return false;
+  }
+}
+async function runHttpClockIn(){
+  if(!state.token||!state.connected)return;
+  state.pendingClockIn=true;
+  try{
+    const response=await fetch(`${AGENT_BASE}/api/clock-in`,{method:'POST',headers:{Authorization:'Bearer '+state.token,'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(25000)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(data.detail||('HTTP '+response.status));
+    state.agentStatus=data.agents||{};
+    state.clockedIn=Boolean(data.cdp_connected);
+    scene.setStatus(state.clockedIn);
+    if(!state.clockedIn)toast('Chrome 尚未確認啟動成功');
+    else log('已使用本機 HTTP Agent 完成打卡');
+  }catch(error){toast('Agent 打卡失敗：'+String(error?.message||error));}
+  finally{state.pendingClockIn=false;refreshUI();}
+}
+async function runHttpClockOut(){
+  if(!state.token)return;
+  try{
+    const response=await fetch(`${AGENT_BASE}/api/clock-out`,{method:'POST',headers:{Authorization:'Bearer '+state.token,'Content-Type':'application/json'},body:JSON.stringify({close_chrome:false}),signal:AbortSignal.timeout(8000)});
+    if(!response.ok)throw Error('HTTP '+response.status);
+    log('本機 Agent 已收到 HTTP 下班打卡指令');
+  }catch(error){toast('Agent 下班通知失敗：'+String(error?.message||error));}
+}
 async function connectAgent(){
   try{
     const res=await fetch(`${AGENT_BASE}/api/health`,{cache:'no-store',signal:AbortSignal.timeout(3500)});if(!res.ok)throw Error('Agent 健康檢查失敗（HTTP '+res.status+'）');
@@ -455,14 +500,14 @@ async function connectAgent(){
     const waitAuth=new Promise(resolve=>{let settled=false;const done=ok=>{if(settled)return;settled=true;clearTimeout(timeout);resolve(ok);};const timeout=setTimeout(()=>{ws.close();done(false);},7500);ws.addEventListener('message',e=>{try{if(JSON.parse(e.data).event==='AUTH_OK')done(true);}catch{}});ws.addEventListener('close',()=>done(false));ws.addEventListener('error',()=>done(false));});
     ws.onopen=()=>ws.send(JSON.stringify({action:'AUTH',token:state.token}));
     ws.onmessage=e=>{let data;try{data=JSON.parse(e.data);}catch{return;}
-      if(data.event==='AUTH_OK'){state.connected=true;log('本地 Agent 已連接');refreshUI();ws.send(JSON.stringify({action:'REFRESH_STATUS'}));}
+      if(data.event==='AUTH_OK'){state.connected=true;state.transport='ws';log('本地 Agent 已連接');refreshUI();ws.send(JSON.stringify({action:'REFRESH_STATUS'}));}
       if(data.event==='AGENT_STATUS_UPDATE'){state.agentStatus=data.data?.agents||{};if(state.pendingClockIn){state.pendingClockIn=false;state.clockedIn=Boolean(data.data?.cdp_connected);scene.setStatus(state.clockedIn);if(!state.clockedIn)toast('Chrome 未確認啟動成功');}log('已同步五家 AI 的分頁存在狀態');refreshUI();}
       if(data.event==='CLOCKED_OUT')log('Agent 已完成下班打卡');
       if(data.event==='ERROR'){state.pendingClockIn=false;toast('Agent：'+data.message);}
     };
-    ws.onclose=()=>{if(state.ws===ws){state.connected=false;refreshUI();}};
-    ws.onerror=()=>{state.connected=false;state.lastAgentError='無法建立 Agent WebSocket。請允許 Chrome 的本機網路存取權限';refreshUI();};
-    const authorized=await waitAuth;if(!authorized){state.connected=false;state.lastAgentError='Agent WebSocket 尚未完成驗證，請重新配對';refreshUI();}else state.lastAgentError='';return authorized;
+    ws.onclose=()=>{if(state.ws===ws&&state.transport!=='http'){state.connected=false;state.transport=null;refreshUI();}};
+    ws.onerror=()=>{if(state.transport!=='http'){state.connected=false;state.lastAgentError='無法建立 Agent WebSocket，正在檢查本機 HTTP 備援';refreshUI();}};
+    const authorized=await waitAuth;if(authorized){state.lastAgentError='';return true;}const fallback=await connectHttpAgent();if(fallback)toast('WebSocket 無法使用，已切換為本機 HTTP 連線');return fallback;
   }catch(error){state.connected=false;state.lastAgentError='無法連線本機 Agent。請確認 Office 與 EXE 在同一台 Windows 電腦，並允許 Chrome 此網站的「本機網路存取」權限。('+String(error?.message||error)+')';log(state.lastAgentError);refreshUI();return false;}
 }
 function clock(){
@@ -470,9 +515,9 @@ function clock(){
   if(!state.clockedIn){
     if(!state.demo&&!state.connected){requestPairing();return;}
     if(state.demo){state.clockedIn=true;scene.setStatus(true);log('已開啟離線示範：五位秘書上班');}
-    else{state.pendingClockIn=true;state.ws.send(JSON.stringify({action:'CLOCK_IN_ALL'}));log('已向 Agent 送出 Chrome 打卡指令，等待結果');}
+    else if(state.transport==='http'){runHttpClockIn();log('已透過 HTTP 傳送打卡指令');}else if(state.ws?.readyState===WebSocket.OPEN){state.pendingClockIn=true;state.ws.send(JSON.stringify({action:'CLOCK_IN_ALL'}));log('已向 Agent 送出 Chrome 打卡指令，等待結果');}else{state.connected=false;state.transport=null;refreshUI();requestPairing();return;}
   }else{
-    if(!state.demo&&state.connected)state.ws.send(JSON.stringify({action:'CLOCK_OUT_ALL',payload:{close_chrome:false}}));
+    if(!state.demo&&state.connected){if(state.transport==='http')runHttpClockOut();else if(state.ws?.readyState===WebSocket.OPEN)state.ws.send(JSON.stringify({action:'CLOCK_OUT_ALL',payload:{close_chrome:false}}));}
     state.clockedIn=false;scene.setStatus(false);log('五位秘書下班；會議記錄仍保留在本機');
   }refreshUI();
 }
@@ -502,7 +547,7 @@ async function requestPairing(){
       if(result.status==='APPROVED'){
         state.token=result.token;
         $('modal-backdrop').classList.add('hidden');
-        const ok=await connectAgent();if(ok){log('Office 已完成本機 Agent 授權連線');toast('本機 Agent 已連線，現在可以打卡');}else{state.token=null;toast('Agent 已核准，但 WebSocket 驗證失敗。請檢查本機網路權限後重新配對');}return;
+        const ok=await connectAgent();if(ok){log('Office 已完成本機 Agent 授權連線');toast('本機 Agent 已連線，現在可以打卡');}else{state.token=null;toast('Agent 已核准，但 WebSocket 與 HTTP 皆無法連線。請檢查瀏覽器權限與本機防火牆');}return;
       }
       if(['REJECTED','EXPIRED'].includes(result.status))throw Error(`配對 ${result.status}`);
     }
