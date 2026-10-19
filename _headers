@@ -5,12 +5,30 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
 
 
 /
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow, noarchive
+
+/
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
+/index.html
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
+/pricing.html
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
+/privacy.html
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
+/refund.html
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
+/terms.html
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://my.howardaistudio.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
 
 /office/*
   Cache-Control: no-store
