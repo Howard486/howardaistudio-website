@@ -579,6 +579,45 @@ async function requestPairing(){
 $('clock-button').addEventListener('click',clock);
 $('demo-toggle').addEventListener('click',()=>{if(state.running||state.clockedIn){toast('請先結束會議並打卡下班後再切換模式');return;}state.demo=!state.demo;refreshUI();toast(state.demo?'已切換為離線示範模式':'已切換為真實分頁／手動交接模式');});
 $('refresh-agent').addEventListener('click',requestPairing);
+
+async function showSaasConnectorStatus(){
+  if(state.running){toast('請先完成或停止會議');return;}
+  const root=modal('SaaS Connector v0.7','CONNECTION / AUTHORIZATION STATUS');
+  root.append(make('p',{class:'help-text',text:'此頁只讀取本機 Agent 連接器能力；不進行 ChatGPT／Gemini 登入，不會新增付費 API 或讀取 AI 網站。'}));
+  if(!state.connected||!state.token){
+    root.append(make('div',{class:'warning-box',text:'請先連線並授權新版 Windows Agent。未配對時無法查詢連接器狀態。'}));
+    return;
+  }
+  try{
+    const response=await fetch(AGENT_BASE+'/api/saas/connectors',{
+      method:'GET',headers:{Authorization:'Bearer '+state.token},
+      signal:AbortSignal.timeout(7000),cache:'no-store'});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(data.detail||'HTTP '+response.status);
+    const providers=data.providers||{};
+    for(const key of ['chatgpt','gemini']){
+      const c=providers[key];
+      if(!c)continue;
+      const section=make('div',{class:'field'});
+      section.append(make('h3',{text:(key==='chatgpt'?'ChatGPT':'Gemini')+' · '+(c.unattended_ready?'AUTO READY':'尚未提供自動收發')}));
+      section.append(make('p',{class:'help-text',text:c.summary||''}));
+      const badge=make('p',{class:'info-box',text:'連接器狀態：'+c.status+' · 人工匯入：'+(c.manual_import_available?'可用':'不可用')});
+      section.append(badge);
+      const links=make('div',{class:'modal-actions'});
+      for(const source of (c.sources||[])){
+        try{
+          const u=new URL(source);
+          if(u.protocol!=='https:'||!['developers.openai.com','help.openai.com','support.google.com'].includes(u.hostname))continue;
+          links.append(make('a',{class:'secondary-button',href:u.href,target:'_blank',rel:'noopener noreferrer',text:'官方文件 ↗'}));
+        }catch{}
+      }
+      section.append(links);root.append(section);
+    }
+    root.append(make('div',{class:'warning-box',text:'ChatGPT：官方訂閱共享須開源本機產品資格或商業合作授權、OAuth 同意並關閉超額額度。Gemini：目前僅確認官方手動匯出路徑。兩者都尚未連上真實自動會議。'}));
+  }catch(error){root.append(make('div',{class:'warning-box',text:'無法取得 v0.7 連接器狀態：'+error.message+'。請確認已啟動新版 Agent。'}));}
+}
+$('saas-connector-status')?.addEventListener('click',showSaasConnectorStatus);
+
 function showMeetingForm(){
   if(state.running){toast('已有會議進行中');return;}
   const root=modal('建立圓桌會議','NEW MEETING / SETUP');

@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/office-v06-browser-demo-bridge
+      - feat/office-v0.7-saas-status
     paths:
       - office/**
       - .github/workflows/validate-office-v06.yml
@@ -26,3 +27,4 @@ jobs:
           node --test office/discussion-rounds.test.mjs
           node --test office/headers.test.mjs
           node --test office/browser-demo.test.mjs
+          node --test office/saas-connectors.test.mjs
