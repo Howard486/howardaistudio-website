@@ -1,0 +1,43 @@
+name: Test RPG Office Redesign
+on:
+  push:
+    branches: [feat/office-rpg-visual-redesign-20261024]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  office-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check Office JavaScript syntax
+        run: |
+          node --check office/app.js
+          node --check office/rpg-ui.js
+      - name: Existing meeting and new visual-layout tests
+        run: |
+          node --test office/meeting-controls.test.mjs
+          node --test office/agent-connection.test.mjs
+          node --test office/headers.test.mjs
+          node --test office/discussion-rounds.test.mjs
+          node --test office/rpg-layout.test.mjs
+      - name: Prepare real browser smoke test
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: End-to-end desktop and mobile UI test
+        run: |
+          python3 -m http.server 8768 --bind 127.0.0.1 > /tmp/hva-http.log 2>&1 &
+          node --test office/rpg-browser.test.mjs
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rpg-office-ui-screenshots
+          path: |
+            rpg-desktop.png
+            rpg-mobile.png
+          if-no-files-found: warn
