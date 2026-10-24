@@ -22,9 +22,13 @@ test("original agent/meeting source untouched and pixels are on separate layer",
  assert.match(app,/class MeetingOrchestrator/);
  assert.match(app,/class OfficeScene/);
  assert.match(app,/OfficeScene\.prototype\.click=/);
- assert.match(art,/OfficeScene\.prototype\.draw=function\(time\)/);
- assert.match(art,/imageSmoothingEnabled=false/);
- assert.match(art,/const W=960,H=608,S=2/);
+ assert.match(art,/OfficeScene\.prototype\.draw=function\(t\)/);
+ assert.match(art,/img\.src=source/);
+ assert.match(art,/\/office\/assets\/hva-meeting-room\.webp/);
+ assert.match(art,/const W=960,H=608/);
+ assert.match(art,/scaleImageToCanvas/);
  assert.doesNotMatch(art,/fetch\(|XMLHttpRequest|WebSocket|localStorage|eval\(/);
- assert.match(css,/#office-scene\{image-rendering:pixelated/);
+ assert.match(css,/#office-scene\{image-rendering:auto/);
+ assert.match(html,/下載 Agent \(Windows ZIP\)/);
+ assert.match(html,/artifacts\/12207520129/);
 });
