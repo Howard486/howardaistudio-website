@@ -1,131 +1,53 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1026">
-  <meta name="description" content="HowardAI Studio AI Secretary Office — Ge, Pe, Tia 共同協作、會議與工作空間。">
-  <title>HowardAI Studio — AI Secretary Office</title>
-  <link rel="stylesheet" href="/office/styles.css">
-  <link rel="stylesheet" href="/office/rpg-theme.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a1422">
+<title>Howard AI Studio — AI Secretary Office</title>
+<link rel="stylesheet" href="/office/styles.css">
+
+
 </head>
 <body>
-<div class="shell rpg-shell">
-  <header class="topbar rpg-topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true">✦</div><div class="brand-copy"><strong>HowardAI Studio</strong><small>✧ AI SECRETARY OFFICE ✧</small></div></div>
-    <nav class="top-nav" aria-label="主要導覽">
-      <button type="button" class="nav-link current" data-action="home"><span>⌂</span> Home <small>首頁</small></button>
-      <button type="button" class="nav-link" data-action="secretaries"><span>♟</span> Secretaries <small>秘書團隊</small></button>
-      <button type="button" class="nav-link" data-action="meeting"><span>♜</span> Meeting <small>會議室</small></button>
-      <button type="button" class="nav-link" data-action="scene"><span>✧</span> Studio <small>創作工坊</small></button>
-      <button type="button" class="nav-link" data-action="history"><span>▤</span> Library <small>紀錄庫</small></button>
-      <button type="button" class="nav-link" data-action="help"><span>⚙</span> Settings <small>設定</small></button>
-    </nav>
-    <div class="top-actions">
-      <div class="top-center"><span class="live-light"></span> STUDIO ONLINE <span class="text-mono" id="clock">--:--</span></div>
-      <button id="global-stop-meeting" class="secondary-button danger-stop hidden" type="button">■ 停止會議</button>
-      <button id="demo-toggle" class="ghost-button" type="button">● 示範模式</button>
-      <button id="clock-button" class="primary-button" type="button">◉ 全員打卡</button>
-    </div>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">H<span>A</span>I<span class="dot">.</span></div><span class="brand-divider"></span><div><strong>SECRETARY OFFICE</strong><small>VIRTUAL WORKSPACE <em>·</em> BETA 0.4</small></div></div>
+    <div class="top-center"><span class="live-light"></span> PRIVATE WORKSPACE <span class="text-mono" id="clock">--:--</span></div>
+    <div class="top-actions"><button id="global-stop-meeting" class="secondary-button danger-stop hidden" type="button">■ 停止會議</button><button id="demo-toggle" class="ghost-button">● 示範模式</button><button id="clock-button" class="primary-button">◉ 全員打卡</button></div>
   </header>
   <div class="body-grid">
-    <aside class="rail" aria-label="功能選單">
-      <div class="rail-title">✦ STUDIO MENU</div>
-      <button class="rail-icon active" type="button" data-action="home" aria-label="總覽"><span>⌂</span><span>Dashboard<small>總覽</small></span></button>
-      <button class="rail-icon" type="button" data-action="secretaries" aria-label="秘書團隊"><span>♟</span><span>Secretaries<small>秘書團隊</small></span></button>
-      <button id="rail-meet" class="rail-icon" type="button" aria-label="召開會議"><span>♜</span><span>Meeting Room<small>會議室</small></span></button>
-      <button id="rail-history" class="rail-icon" type="button" aria-label="歷史紀錄"><span>▤</span><span>Knowledge<small>知識庫 / 紀錄</small></span></button>
-      <button class="rail-icon" type="button" data-action="tasks" aria-label="任務"><span>☷</span><span>Tasks<small>任務中心</small></span></button>
-      <button id="rail-help" class="rail-icon" type="button" aria-label="操作說明"><span>⚙</span><span>System<small>操作說明</small></span></button>
-      <span class="rail-spacer"></span>
-      <div class="rail-tower" aria-hidden="true"><span>✧</span><span>♜</span><span>✦</span></div>
-      <div class="studio-status"><span class="rail-version">STUDIO STATUS</span><div><span class="green-dot"></span> <b>Online</b></div><small>Ge · Pe · Tia<br>AI 秘書辦公室已就緒</small></div>
+    <aside class="rail">
+      <div class="rail-icon active" title="虛擬辦公室" aria-label="虛擬辦公室">▦</div>
+      <button id="rail-meet" class="rail-icon" aria-label="召開會議" title="召開會議">◉</button>
+      <button id="rail-history" class="rail-icon" aria-label="歷史紀錄" title="歷史紀錄">▤</button>
+      <button id="rail-help" class="rail-icon" aria-label="操作說明" title="操作說明">?</button>
+      <span class="rail-spacer"></span><span class="rail-version">v0.4</span>
     </aside>
-    <main class="workspace" id="top">
-      <div class="workspace-heading">
-        <div><div class="eyebrow">✦ THE OFFICE / FLOOR 01</div><h1>AI 秘書的魔法工作室 <span class="office-state" id="office-state">● 待機中</span></h1><p>Ge · Pe · Tia 陪你一起，把靈感變成真正的成果。</p></div>
-        <div class="workspace-tools"><span id="connection-label" class="connection-pill">○ 本機 Agent 檢查中</span><button class="subtle-btn" id="refresh-agent" type="button" title="連線／配對本機 Windows Agent">↻ 連線／配對 Agent</button><a class="subtle-btn download-bat" href="/office/start-agent.bat" download="start-agent.bat" title="下載 Windows Agent 啟動批次檔，需搭配 HVASecretaryAgent.exe">↓ 下載 BAT</a></div>
-      </div>
-      <section class="hero-stage rpg-frame" aria-label="Ge、Pe、Tia 三位秘書形象">
-        <div class="hero-art" role="img" aria-label="Ge、Pe、Tia 的魔法辦公室形象插圖"></div>
-        <div class="hero-copy"><span class="hero-overline">✦ WELCOME TO YOUR SECRETARY OFFICE</span><strong>Good Ideas, Better Together.</strong><span>讓三位 AI 秘書，陪你探索每一個新計畫。</span></div>
-        <div class="hero-team"><span>✦ Ge</span><span>✦ Pe</span><span>✦ Tia</span></div>
-      </section>
-      <div class="dashboard-detail" id="secretary-profiles">
-        <section class="rpg-frame profile-section">
-          <div class="section-heading"><div><span class="pink-gem">♥</span><strong>SECRETARY PROFILES</strong><small>秘書檔案</small></div><button type="button" class="text-link" data-action="secretaries">View All ›</button></div>
-          <div class="profiles-grid">
-            <button type="button" class="profile-card ge" data-persona="gemini" aria-label="開啟 Ge 秘書資訊">
-              <span class="portrait portrait-ge" aria-hidden="true"></span><span class="profile-body"><strong>Ge <span class="lv">Lv.99</span></strong><span class="stars">★★★★★</span><small>TECH &amp; OPS<br>技術・營運・自動化</small><span class="skill-pills">⚙ 系統架構　✧ 效率提升</span><span class="profile-line">「讓複雜的事，變得簡單可行。」</span></span>
-            </button>
-            <button type="button" class="profile-card pe" data-persona="perplexity" aria-label="開啟 Pe 秘書資訊">
-              <span class="portrait portrait-pe" aria-hidden="true"></span><span class="profile-body"><strong>Pe <span class="lv">Lv.99</span></strong><span class="stars">★★★★★</span><small>RESEARCH &amp; INTEL<br>研究・情報・分析</small><span class="skill-pills">▤ 情報分析　✧ 趨勢研究</span><span class="profile-line">「從資訊中，發現新的可能。」</span></span>
-            </button>
-            <button type="button" class="profile-card tia" data-persona="chatgpt" aria-label="開啟 Tia 秘書資訊">
-              <span class="portrait portrait-tia" aria-hidden="true"></span><span class="profile-body"><strong>Tia <span class="lv">Lv.99</span></strong><span class="stars">★★★★★</span><small>PRODUCT &amp; STRATEGY<br>產品・策略・統籌</small><span class="skill-pills">♛ 產品規劃　✧ 策略設計</span><span class="profile-line">「從想法到實現，每一步都值得。」</span></span>
-            </button>
-          </div>
-        </section>
-        <section class="rpg-frame scene-previews" id="scene-previews">
-          <div class="section-heading"><div><span class="pink-gem">✿</span><strong>SCENES &amp; PREVIEW</strong><small>場景預覽</small></div><button type="button" class="text-link" data-action="scene">View All ›</button></div>
-          <div class="preview-grid">
-            <button type="button" class="preview-tile tile-routine" data-action="scene"><span>01 · Office Routine<small>辦公日常</small></span><b aria-hidden="true">✎ ♟ ✨</b></button>
-            <button type="button" class="preview-tile tile-adventure" data-action="scene"><span>02 · Team Adventure<small>團隊冒險</small></span><b aria-hidden="true">♜ ✧ ◈</b></button>
-            <button type="button" class="preview-tile tile-meeting" data-action="scene"><span>03 · Office Meeting<small>會議討論</small></span><b aria-hidden="true">▤ ♟ ▤</b></button>
-            <button type="button" class="preview-tile tile-social" data-action="scene"><span>04 · Social Time<small>互動時光</small></span><b aria-hidden="true">♡ ✨ ♡</b></button>
-          </div>
-        </section>
-      </div>
-      <div class="dashboard-foot">
-        <section class="rpg-frame emotes-panel"><div class="section-heading"><div><span class="pink-gem">♥</span><strong>EMOTES &amp; ANIMATIONS</strong><small>表情動作</small></div><small class="muted-label">TEAM EXPRESSIONS</small></div><div class="emote-list"><span>✦<small>待機</small></span><span>☻<small>打招呼</small></span><span>♡<small>開心</small></span><span>✧<small>靈感</small></span><span>☷<small>思考</small></span><span>☾<small>休息</small></span><span>✎<small>計畫中</small></span><span>⚙<small>工作中</small></span></div></section>
-        <section class="rpg-frame special-panel"><div class="section-heading"><div><span class="pink-gem">✦</span><strong>SPECIAL SKILLS</strong><small>專屬技能</small></div></div><div class="special-grid"><span class="special-ge">⚙ <b>Ge</b><small>System Override</small></span><span class="special-pe">◈ <b>Pe</b><small>Insight Scan</small></span><span class="special-tia">♛ <b>Tia</b><small>Strategic Link</small></span></div></section>
-      </div>
-      <details class="room-drawer rpg-frame" id="meeting-room">
-        <summary>♜　MEETING ROOM　<span>展開原有互動式 2D 圓桌會議場景</span><span class="room-arrow">⌄</span></summary>
-        <div class="scene-shell"><div class="scene-top"><span><span class="green-dot"></span> HOWARD AI STUDIO / MAIN FLOOR</span><span class="scene-indicators"><span>◎ 30 × 19 GRID</span><span id="room-population">00 / 05 ONLINE</span></span></div><canvas id="office-scene" width="960" height="608" aria-label="可點擊互動的像素風辦公室：點圓桌召開會議，點秘書查看狀態"></canvas><div class="scene-footer"><span>✥ 點擊地面移動角色 · 點擊圓桌召集會議</span><span id="scene-context">OFFICE STATUS: IDLE</span></div></div>
-      </details>
-      <section class="bottom-panels" id="task-panel"><div class="panel activity"><div class="panel-title"><span>◷　QUEST LOG / 即時動態</span><small>LIVE ACTIVITY</small></div><div class="activity-list" id="activity-list" aria-live="polite"><p class="dim">辦公室已就緒，等待打卡。</p></div></div><div class="panel shortcuts"><div class="panel-title"><span>⌘　QUICK ACTIONS / 快速操作</span><small>MISSION CONTROL</small></div><div class="quick-grid"><button id="quick-meet" type="button"><b>♜</b><span>召開會議<small>START MEETING</small></span></button><button id="quick-history" type="button"><b>▤</b><span>歷史報告<small>MEETING LOGS</small></span></button></div><div class="mini-tip">示範模式不呼叫外部 AI。真實 SaaS 會議仍使用使用者核准的網頁交接與手動匯入。</div></div></section>
+    <main class="workspace">
+      <div class="workspace-heading"><div><div class="eyebrow">THE OFFICE / FLOOR 01</div><h1>虛擬協作辦公室 <span class="office-state" id="office-state">● 待機中</span></h1><p>讓多位 AI 助理在同一個空間合作思考。</p></div><div class="workspace-tools"><span id="connection-label" class="connection-pill">○ 本機 Agent 檢查中</span><button class="subtle-btn" id="refresh-agent" title="連線／配對本機 Windows Agent">↻ 連線／配對 Agent</button><a class="subtle-btn download-bat" href="/office/start-agent.bat" download="start-agent.bat" title="下載 Windows Agent 啟動批次檔，需搭配 HVASecretaryAgent.exe">↓ 下載 BAT</a></div></div>
+      <div class="scene-shell"><div class="scene-top"><span><span class="green-dot"></span> HOWARD AI STUDIO / MAIN FLOOR</span><span class="scene-indicators"><span>✦ PIXEL MEETING ROOM</span><span id="room-population">00 / 05 ONLINE</span></span></div><canvas id="office-scene" width="960" height="608" aria-label="可點擊互動的像素風會議辦公室：點圓桌召開會議，點秘書查看狀態"></canvas><div class="scene-footer"><span>✥ 點擊地面移動角色 · 點擊圓桌召集會議</span><span id="scene-context">OFFICE STATUS: IDLE</span></div></div>
+      <section class="bottom-panels"><div class="panel activity"><div class="panel-title"><span>◷ 即時動態</span><small>LIVE ACTIVITY</small></div><div class="activity-list" id="activity-list" aria-live="polite"><p class="dim">辦公室已就緒，等待打卡。</p></div></div><div class="panel shortcuts"><div class="panel-title"><span>⌘ 快速操作</span><small>QUICK ACTIONS</small></div><div class="quick-grid"><button id="quick-meet"><b>◉</b><span>召開會議<small>START MEETING</small></span></button><button id="quick-history"><b>▤</b><span>歷史報告<small>MEETING LOGS</small></span></button></div><div class="mini-tip">預設 2 輪討論。示範模式不呼叫 AI；實際 AI 網頁交接可一鍵複製與帶回剪貼簿，尚未自動送出。</div></div></section>
     </main>
-    <aside class="inspector" aria-label="會議控制台">
-      <div class="rpg-frame start-card"><div class="quest-icon" aria-hidden="true">✦</div><div><small>✧ START A NEW MISSION</small><h2>Start a New Meeting</h2><p>開始新會議　·　Let's discuss, plan and make it happen.</p></div><button class="launch-button hero-launch" type="submit" form="quick-meeting">▶ Start Meeting　›</button></div>
-      <div class="rpg-frame settings-card">
-        <div class="inspector-title"><div><span class="eyebrow">⚙ MEETING SETTINGS</span><h2>會議設定</h2></div><span class="headcount">3 + 2</span></div>
-        <form class="side-form" id="quick-meeting">
-          <label for="quick-topic">Topic　<span>會議主題</span></label>
-          <textarea id="quick-topic" maxlength="2500" required rows="3" placeholder="例如：規劃 HVA.SEC 新產品方向與市場策略">如何提升 AI Secretary Office 的使用體驗與部署安全？</textarea>
-          <label for="quick-chair">Chair　<span>主持人</span></label>
-          <div class="role-picks" aria-label="快速選擇主席">
-            <button type="button" class="chair-pill" data-chair="gemini">Ge</button>
-            <button type="button" class="chair-pill active" data-chair="chatgpt">Tia</button>
-            <button type="button" class="chair-pill" data-chair="perplexity">Pe</button>
-          </div>
-          <select id="quick-chair"><option value="chatgpt">Tia · ChatGPT</option><option value="gemini">Ge · Gemini</option><option value="perplexity">Pe · Perplexity</option><option value="claude">Claude</option><option value="copilot">Copilot</option></select>
-          <label>Attendees　<span>參與成員（至少兩位）</span></label>
-          <div class="side-checks" id="quick-attendees"><label><input type="checkbox" value="gemini" checked> Ge</label><label><input type="checkbox" value="chatgpt" checked> Tia</label><label><input type="checkbox" value="perplexity" checked> Pe</label><label><input type="checkbox" value="claude" checked> Claude</label><label><input type="checkbox" value="copilot" checked> Copilot</label></div>
-          <label for="quick-mode">Mode　<span>會議模式</span></label>
-          <div class="quick-modes" aria-label="快速選擇模式">
-            <button class="mode-pick active" type="button" data-mode="consensus">✦ <b>Discussion</b><small>共同合議</small></button>
-            <button class="mode-pick" type="button" data-mode="debate">♜ <b>Debate</b><small>辯論攻防</small></button>
-            <button class="mode-pick" type="button" data-mode="collaborate">▤ <b>Planning</b><small>協作計畫</small></button>
-            <button class="mode-pick" type="button" data-mode="relay">⇄ <b>Relay</b><small>接力合作</small></button>
-          </div>
-          <select id="quick-mode"><option value="consensus">共同合作找出最佳解</option><option value="debate">辯論大會</option><option value="collaborate">共同協作</option><option value="relay">接力作業</option></select>
-          <label for="quick-rounds">Rounds　<span>討論輪數</span></label>
-          <div class="round-picker"><button type="button" data-round-step="-1" aria-label="減少討論輪數">−</button><div><strong id="round-number">2</strong><small>預設兩輪</small></div><button type="button" data-round-step="1" aria-label="增加討論輪數">＋</button></div>
-          <select id="quick-rounds"><option value="1">1 輪</option><option value="2" selected>2 輪（預設）</option><option value="3">3 輪</option><option value="4">4 輪</option><option value="5">5 輪</option></select>
-          <button type="submit" class="launch-button form-launch">✦ 開始會議 / Begin Quest</button>
-          <small class="side-info">真實模式請先配對 Windows Agent；第三方 AI 網站回答仍由使用者主動匯入。</small>
-        </form>
-      </div>
-      <div class="rpg-frame party-panel">
-        <div class="inspector-title mini"><div><span class="eyebrow">♟ PARTY STATUS</span><h2>秘書團隊狀態</h2></div><span class="headcount">05</span></div><div id="agent-list" class="agent-list"></div><div id="mode-preview" class="mode-preview"></div>
-        <div class="inspector-bottom"><span class="green-dot"></span> 本地資料優先 <small>IndexedDB 儲存紀錄</small></div>
-      </div>
-    </aside>
+    <aside class="inspector">
+<div class="inspector-title"><div><span class="eyebrow">MEETING SETTINGS</span><h2>會議設定面板</h2></div><span class="headcount">05</span></div>
+<p class="inspector-copy">設定議題、主席與與會秘書，一鍵召集圓桌會議。</p>
+<form class="side-form" id="quick-meeting">
+<label for="quick-topic">◎ 會議主題</label><textarea id="quick-topic" maxlength="2500" required rows="3">如何提升 2D 虛擬辦公室的載入速度與文字搬移效率？</textarea>
+<label for="quick-chair">♛ 會議主席</label><select id="quick-chair"><option value="chatgpt">ChatGPT</option><option value="gemini">Gemini</option><option value="claude">Claude</option><option value="copilot">Copilot</option><option value="perplexity">Perplexity</option></select>
+<label>♧ 與會人員</label><div class="side-checks" id="quick-attendees">
+<label><input type="checkbox" value="gemini" checked> Gemini</label><label><input type="checkbox" value="chatgpt" checked> ChatGPT</label><label><input type="checkbox" value="claude" checked> Claude</label><label><input type="checkbox" value="copilot" checked> Copilot</label><label><input type="checkbox" value="perplexity" checked> Perplexity</label></div>
+<label for="quick-mode">▤ 會議類型</label><select id="quick-mode"><option value="consensus">共同合作找出最佳解</option><option value="debate">辯論大會</option><option value="collaborate">共同協作</option><option value="relay">接力作業</option></select>
+<label for="quick-rounds">↻ 討論輪數</label><select id="quick-rounds"><option value="1">1 輪</option><option value="2" selected>2 輪（預設）</option><option value="3">3 輪</option><option value="4">4 輪</option><option value="5">5 輪</option></select>
+<button type="submit" class="launch-button">▶ 開始會議</button><small class="side-info">真實模式需先配對 Windows Agent。Chrome 詢問存取本機網路時，確認來源後允許。</small></form>
+<div class="inspector-divider"></div><div class="inspector-title mini"><div><span class="eyebrow">TEAM DIRECTORY</span><h2>秘書團隊</h2></div><span class="headcount">05</span></div>
+<div id="agent-list" class="agent-list"></div><div id="mode-preview" class="mode-preview"></div>
+<div class="inspector-bottom"><span class="green-dot"></span> 本地資料優先 <small>IndexedDB 儲存紀錄</small></div>
+</aside>
   </div>
 </div>
-<div id="modal-backdrop" class="modal-backdrop hidden" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><div><span class="eyebrow" id="modal-kicker">OFFICE CONTROL</span><h2 id="modal-title">建立會議</h2></div><div class="modal-header-actions"><button id="modal-stop-meeting" class="secondary-button danger-stop hidden" type="button">■ 停止會議</button><button class="close-button" id="modal-close" aria-label="關閉視窗／停止進行中的會議">×</button></div></div><div class="modal-content" id="modal-content"></div></section></div>
+<div id="modal-backdrop" class="modal-backdrop hidden" role="presentation">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><div><span class="eyebrow" id="modal-kicker">OFFICE CONTROL</span><h2 id="modal-title">建立會議</h2></div><div class="modal-header-actions"><button id="modal-stop-meeting" class="secondary-button danger-stop hidden" type="button">■ 停止會議</button><button class="close-button" id="modal-close" aria-label="關閉視窗／停止進行中的會議">×</button></div></div><div class="modal-content" id="modal-content"></div></section>
+</div>
 <div class="toast-region" id="toast-region" aria-live="polite"></div>
-<script defer src="/office/app.js"></script>
-<script defer src="/office/rpg-ui.js"></script>
-</body>
+<script defer src="/office/app.js"></script><script defer src="/office/pixel-room.js"></script></body>
 </html>

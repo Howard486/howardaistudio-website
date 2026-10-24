@@ -27,3 +27,9 @@
 .workspace-tools{flex-wrap:wrap;gap:8px}
 .download-bat{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
 @media(max-width:650px){.modal-header-actions{gap:6px}.danger-stop{padding:9px;font-size:11px}.download-bat{font-size:11px}}
+
+/* Only the meeting-room canvas receives the restored pixel-art style. */
+#office-scene{image-rendering:pixelated;image-rendering:crisp-edges;background:#171b37}
+.scene-shell{border-color:#596284;box-shadow:0 16px 50px #02081d65}
+.scene-top{background:#182440;border-bottom:1px solid #596284}
+.scene-footer{background:#172039;border-top:1px solid #596284}
