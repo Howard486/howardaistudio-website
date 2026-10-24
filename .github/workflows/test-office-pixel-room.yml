@@ -1,7 +1,7 @@
 name: Validate Pixel Meeting Room Only
 on:
   push:
-    branches: [fix/office-pixel-meeting-only-20261024, feat/office-reference-image-agent-download-20261024]
+    branches: [fix/office-pixel-meeting-only-20261024, feat/office-reference-image-agent-download-20261024, fix/agent-v07-download-20261025]
   workflow_dispatch:
 permissions:
   contents: read
