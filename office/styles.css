@@ -33,3 +33,11 @@
 .scene-shell{border-color:#596284;box-shadow:0 16px 50px #02081d65}
 .scene-top{background:#182440;border-bottom:1px solid #596284}
 .scene-footer{background:#172039;border-top:1px solid #596284}
+
+/* Image-first Office meeting room: crisp reference art, while controls stay original. */
+#office-scene{image-rendering:auto;aspect-ratio:960/608;cursor:pointer}
+.workspace-tools{flex-wrap:wrap;gap:7px}
+.download-agent{display:inline-flex;align-items:center;justify-content:center;
+  text-decoration:none;white-space:nowrap;border-color:#63acae;color:#d9f8f6}
+.download-agent:hover{border-color:#84ddd0;background:#214455}
+@media(max-width:650px){.download-agent{font-size:11px;padding:8px 9px}}
