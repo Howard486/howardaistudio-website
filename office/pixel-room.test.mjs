@@ -22,7 +22,7 @@ test("original agent/meeting source untouched and pixels are on separate layer",
  assert.match(app,/class MeetingOrchestrator/);
  assert.match(app,/class OfficeScene/);
  assert.match(app,/OfficeScene\.prototype\.click=/);
- assert.match(art,/OfficeScene\.prototype\.draw=function\(time\)/);
+ assert.match(art,/OfficeScene\.prototype\.draw=function\(t\)/);
  assert.match(art,/img\.src=source/);
  assert.match(art,/\/office\/assets\/hva-meeting-room\.webp/);
  assert.match(art,/const W=960,H=608/);
