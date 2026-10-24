@@ -1,0 +1,41 @@
+name: Validate Pixel Meeting Room Only
+on:
+  push:
+    branches: [fix/office-pixel-meeting-only-20261024]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - name: Check JS syntax
+        run: |
+          node --check office/app.js
+          node --check office/pixel-room.js
+      - name: Check pre-existing meetings + scene-only regression
+        run: |
+          node --test office/meeting-controls.test.mjs
+          node --test office/discussion-rounds.test.mjs
+          node --test office/agent-connection.test.mjs
+          node --test office/headers.test.mjs
+          node --test office/pixel-room.test.mjs
+      - name: Set up browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Actual desktop/mobile Chromium checks
+        run: |
+          python3 -m http.server 8768 --bind 127.0.0.1 >/tmp/hva-pixel.log 2>&1 &
+          node --test office/pixel-room.browser.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixel-meeting-screenshots
+          path: |
+            pixel-meeting-desktop.png
+            pixel-meeting-mobile.png
+          if-no-files-found: warn
