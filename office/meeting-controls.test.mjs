@@ -35,3 +35,12 @@ test('Windows batch launcher requires EXE and is downloadable',()=>{
  assert.match(bat,/HVASecretaryAgent\.exe/);
  assert.doesNotMatch(bat,/pip install|Invoke-WebRequest|curl |wget /i);
 });
+
+test("Agent download targets v0.7 Windows preview and BAT supports matching EXE",()=>{
+ assert.match(html,/artifacts\/12326137799/);
+ assert.match(html,/下載 Agent v0\.7/);
+ assert.doesNotMatch(html,/artifacts\/12207520129/);
+ assert.match(bat,/HVASecretaryAgent-v07\.exe/);
+ assert.match(bat,/HVASecretaryAgent\.exe/);
+ assert.match(bat,/Extract BOTH ZIP layers/);
+});

@@ -29,6 +29,6 @@ test("original agent/meeting source untouched and pixels are on separate layer",
  assert.match(art,/scaleImageToCanvas/);
  assert.doesNotMatch(art,/fetch\(|XMLHttpRequest|WebSocket|localStorage|eval\(/);
  assert.match(css,/#office-scene\{image-rendering:auto/);
- assert.match(html,/下載 Agent \(Windows ZIP\)/);
- assert.match(html,/artifacts\/12207520129/);
+ assert.match(html,/下載 Agent v0\.7 \(Windows ZIP\)/);
+ assert.match(html,/artifacts\/12326137799/);
 });
